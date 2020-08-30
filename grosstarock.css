@@ -1,0 +1,479 @@
+/**
+ *------
+ * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel 
+ * Colin <ecolin@boardgamearena.com>
+ * GrossTarock implementation : © W Michael Shirk <wmichaelshirk@gmail.com>
+ *
+ * This code has been produced on the BGA studio platform for use on 
+ * http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ *
+ * grosstarock.css
+ *
+ * GrossTarock stylesheet
+ *
+ */
+
+
+
+/* Note: you must not use any @import directive */
+
+/*
+ * Player Hand (Stock)
+ */
+.stockitem {
+    border: 1px solid grey;
+    border-radius: .5em;
+    transition: box-shadow 0.2s ease-in;
+}
+.stockitem_selected, .stockitem_selected:hover {
+    transform: translateY(-1em);
+    box-shadow: rgba(0, 0, 0, 0.9) 0px 0px 7px;
+    border: 1px solid grey !important;
+}
+
+.stockitem:hover {
+    box-shadow: rgba(0, 0, 0, 0.25) 2px 4px 5px;
+}
+
+/*
+ * Pots
+ */
+.pot {
+	display: inline-block;
+    background-color: white;
+    border-bottom-left-radius: 30%;
+    border-bottom-right-radius: 30%;
+    width: 2em;
+    background: linear-gradient(to right, rgba(226,226,226,1) 0%, rgba(209,209,209,1) 0%, rgba(219,219,219,1) 18%, rgba(254,254,254,1) 100%);
+    box-shadow: 10px 10px 20px 0px rgba(0,0,0,0.75);
+}
+.pot span {
+	display: block;
+}
+
+#ultimo_pot_wrap {
+	position: absolute;
+	width: 75px;
+	height: 40px;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+
+
+/*
+ * Card table, and deck settings
+ */
+#wrap {
+    margin-top: 10px;
+    position: relative;
+    text-align: center;
+    --cardwidth: 70px;
+    --cardheight: 129px;
+    --avatar-radius: 1em;
+}
+
+.tarot_0 { --cardurl: url('img/tarot_0.png'); }
+.tarot_1 { --cardurl: url('img/tarot_1.png'); }
+.tarot_2 { --cardurl: url('img/tarot_2.png'); }
+.tarot_3 {
+    --cardurl: url('img/tarot_3.png');
+    --cardwidth: 72px;
+    --cardheight: 139px;
+}
+
+
+#table {
+	z-index: -1;
+	padding: 25px;
+    display: inline-block;
+    background-image: url('img/green_mat.jpg');
+    background-color: green;
+    border-radius: 20px;
+}
+
+
+
+/*
+ * Table Layout
+ */
+
+#playertables {
+    position: relative;
+    /* width: 680px;
+    height: 540px; */
+    width: 500px;
+    height: 450px;
+}
+/* Position of players according to their number */
+.three_players .playertable_0, /* South */
+.two_players .playertable_0 { /* South */
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%); /* center */
+}
+
+.playertable_0 .playerTables__avatar-wrapper {
+	position: absolute;
+	bottom: 0px;
+	left: 50%;
+    transform: translateX(-50%);
+}
+.playertable_0 .playerTables__card {
+	bottom: 120px;
+	left: 50%;
+    transform: translateX(-50%);
+}
+.playertable_0 .playerTables__pre-status {
+	bottom: 25%;
+	left: -2em;
+	position: absolute;
+}
+.playertable_0 .playerTables__status {
+	bottom: 25%;
+	right: -2em;
+	/* text-align: left; */
+	position: absolute;
+}
+.playertable_0 .playerTables__tricksWon {
+	bottom: 0;
+	left: -2em;
+	text-align: left;
+}
+
+
+.two_players .playertable_1 { /* North */
+    left: 50%;
+    top: 0px;
+    transform: translateX(-50%); /* center */
+}
+.two_players .playertable_1 .playerTables__avatar-wrapper {
+	position: absolute;
+	top: 0px;
+	left: 50%;
+    transform: translateX(-50%);
+}
+.two_players .playertable_1 .playerTables__card {
+	top: 120px;
+	left: 50%;
+    transform: translateX(-50%);
+}
+.two_players .playertable_1 .playerTables__status {
+	top: 0;
+	left: 0;
+	text-align: left;
+	position: absolute;
+}
+.two_players .playertable_1 .playerTables__tricksWon {
+	top: 0;
+	right: -2em;
+    text-align: left;
+}
+
+
+
+
+
+.three_players .playertable_1 { /* North-East */
+    right: 0px;
+    top: 0px;
+}
+
+.three_players  .playertable_1 {
+	right: 0;
+	top: 0;
+}
+.three_players .playertable_1 .playerTables__avatar-wrapper {
+	position: absolute;
+	right: 0;
+	top: 0;
+}
+.three_players .playertable_1 .playerTables__card {
+	right: 120px;
+	top: 50%;
+}
+.three_players .playertable_1 .playerTables__pre-status {
+	bottom: 20%;
+	right: 20%;
+	position: absolute;
+}
+.three_players .playertable_1 .playerTables__status {
+	top: 25%;
+	left: 0;
+	position: absolute;
+}
+.three_players .playertable_1 .playerTables__tricksWon {
+	bottom: 20%;
+	right: 0;
+	text-align: right;
+}
+
+
+
+
+
+
+.three_players .playertable_2 { /* North-West */
+    left: 0px;
+    top: 0px;
+}
+.playertable_2 {
+	left: 0;
+	top: 0;
+}
+.playertable_2 .playerTables__avatar-wrapper {
+	position: absolute;
+	left: 0;
+	top: 0;
+}
+.playertable_2 .playerTables__card {
+	left: 120px;
+	top: 50%;
+}
+.playertable_2 .playerTables__pre-status {
+	top: 10%;
+	right: 0;
+	position: absolute;
+}
+.playertable_2 .playerTables__status {
+	top: 80%;
+	left: 25%;
+	position: absolute;
+}
+.playertable_2 .playerTables__tricksWon {
+	top: 0%;
+	right: 0;
+	text-align: left;
+}
+
+
+
+/*
+ * Player Areas
+ */
+
+
+
+.playertable {
+	z-index: 1;
+    position: absolute;
+    text-align: center;
+    width: 180px; /* +20px padding from whiteblock! */
+    height: 170px; /* +20px padding from whiteblock! */
+    box-sizing: border-box;
+    width: 160px;
+	height: 180px;
+}
+
+.playertablename {
+    font-weight: bold;
+    padding: 2px;
+    background-color: floralwhite;
+    border-radius: 5px;
+}
+
+/* #change_turn_order {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin-left: -23px;
+    margin-top: -22px;
+    padding: 4px;
+    border-color: #004000 !important;
+    background-color: lightgrey;
+} */
+#turn_order {
+	z-index: 0;
+	top: 50%;
+    font-weight: bold;
+    font-size: 5em;
+    color: darkgreen;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+}
+.two_players #turn_order {
+    display: none;
+}
+
+
+
+.cardontable {
+    position: absolute;
+    width: var(--cardwidth);
+    height: var(--cardheight);
+	background-image: var(--cardurl);
+	border-radius: .5em;
+    box-shadow: rgba(0, 0, 0, 0.25) 2px 4px 5px; /* coinche */
+}
+
+.scoringTable th {
+    font-weight: bold;
+}
+.scoringTable tfoot {
+    border-top: 1px solid black;
+}
+
+.playerTables__bubble {
+	opacity: 0;
+	background: white;
+	border-radius: 18px/15px;
+	bottom: 100%;
+	color: #000;
+	font-weight: normal;
+	left: -30px;
+	padding: 5px 15px;
+	position: absolute;
+	z-index: 100;
+	box-shadow: rgba(0, 0, 0, 0.5) 2px 2px 7px;
+	font-size: 14px;
+	transition: opacity 0.5s ease-in;
+	min-width: 40px;
+	pointer-events: none;
+}
+
+.speech_bubble {
+    display: none;
+}
+.playerTables__bubble:after {
+	border-color: #ffffff transparent;
+	border-style: solid;
+	border-width: 15px 15px 0;
+	bottom: -10px;
+	content: '';
+	display: block;
+	left: 30px;
+	position: absolute;
+	width: 0;
+}
+.playerTables__bubble:hover {
+	opacity: 0.5;
+}
+.playerTables__bubble--visible {
+	opacity: 1;
+	display: block;
+	pointer-events: all;
+}
+
+#right {
+    float: right;
+}
+
+
+.playerTables__card {
+	margin: 0;
+	position: absolute;
+	width: var(--cardwidth);
+	height: var(--cardheight);
+}
+
+.playerTables__tricksWon {
+	opacity: 0;
+	margin: 0;
+	position: absolute;
+	/* width: 110px; */
+	height: 22px;
+	transition: opacity 0.5s ease-in;
+}
+
+.playerTables__tricksWon--notEmpty {
+	opacity: 1;
+}
+
+.playerTables__tricksWonIcon {
+	display: inline-block;
+	vertical-align: middle;
+	width: 25px;
+	height: 22px;
+	background-size: contain;
+	background-repeat: no-repeat;
+	background-position: 50% 50%;
+	background-image: url('img/tricks-icon.png');
+}
+
+.playerTables__tricksWonValue {
+	display: inline-block;
+	vertical-align: middle;
+	font-weight: bold;
+	font-size: 0.8rem;
+	line-height: 22px;
+}
+
+
+
+.playerTables__name {
+	position: absolute; /* Fix to bottom */
+	bottom: 0;          /* " */
+    width: 100%;
+    box-sizing: border-box;
+    padding: 2px;
+	font-size: 12px;
+	color: white;
+	overflow: hidden;
+	text-overflow: ellipsis;
+    white-space: nowrap;
+    /* border-bottom-right-radius: var(--avatar-radius);
+    border-bottom-left-radius: var(--avatar-radius); */
+    border-radius: var(--avatar-radius);
+    border: 1px solid white;
+}
+
+.playerTables__name > span {
+	font-weight: bold;
+	padding: 1px 4px;
+	border-radius: 3px;
+	text-shadow: rgba(0, 0, 0, 0.4) 1px 1px 1px;
+	letter-spacing: 0.05rem;
+}
+
+.playerTables__avatar-wrapper {
+	box-sizing: border-box;
+	position: relative;
+	width: 110px;
+	height: 110px;
+	background-size: cover;
+	background-repeat: no-repeat;
+	background-position: 50% 50%;
+	border-radius: 2px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--avatar-radius);
+}
+
+.playerTables__table--active .playerTables__avatar-wrapper {
+	border: 4px solid rgba(255, 255, 255, 0.5);
+}
+
+.playerTables__avatar {
+	box-sizing: border-box;
+	width: 100%;
+	height: 100%;
+	background-size: cover;
+	background-repeat: no-repeat;
+    background-position: 50% 50%;
+    border-radius: var(--avatar-radius);
+}
+
+
+
+/*
+ * Scoring Table
+ */
+
+ .tableWindow table {
+    margin: auto;
+    margin-bottom: 2em;
+}
+
+.tableWindow tr:last-of-type td:not(:first-of-type) {
+    border-top: 2px solid #6678b1;
+}
+.tableWindow .total {
+    font-weight: bold;
+}
+.tableWindow table em {
+    font-style: italic;
+    color: darkgrey;
+}
