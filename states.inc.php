@@ -139,7 +139,8 @@ $machinestates = array(
         "type" => "activeplayer",
         "action" => "stPlayerTurn",
         "possibleactions" => ["playCard"],
-        "transitions" => ["playCard" => 32]
+        "transitions" => ["playCard" => 32],
+        'args' => 'argPlayerTurn'
     ],
     32 => array(
         "name" => "nextPlayer",

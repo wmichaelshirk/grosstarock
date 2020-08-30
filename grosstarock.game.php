@@ -655,6 +655,79 @@ class GrossTarock extends Table {
         return $card['type'] == 5 && $card['type_arg'] == 1;
     }
 
+    /**
+	 * Assert that the card can be played.
+	 * Throws an exception if not.
+	 */
+	private function assertCardPlay($cardId) {
+        $playerId = self::getActivePlayerId();
+        $playerHand = $this->cards->getCardsInLocation('hand', $playerId);
+
+        // card must be in hand.
+        $isInHand = false;
+        $currentSuitLed = self::getGameStateValue('suit_led');
+        $tricksPlayed = self::getGameStateValue( 'tricks_played' );
+        $atLeastOneOfSuitLed = false;
+        $atLeastOneTrump = false;
+        $card = null;
+
+        foreach($playerHand as $currentCard) {
+            if ($currentCard['id'] == $cardId) {
+                $isInHand = true;
+                $card = $currentCard;
+            }
+            if ($currentCard['type'] == $currentSuitLed &&
+                $currentCard['type_arg'] != 22) {
+                $atLeastOneOfSuitLed = true;
+            }
+            /* Trump (not the Fool) */
+            if ($currentCard['type'] == 5 && $currentCard['type_arg'] != 22) {
+                $atLeastOneTrump = true;
+            }
+        }
+
+        if (!$isInHand) {
+            throw new BgaUserException(self::_("This card is not in your hand"));
+        }
+
+        if ($card['type_arg'] == 22) { // Fool
+            // Fool can be played anytime except 2nd to last trick.
+            if ($tricksPlayed == 23) {
+                throw new BgaUserException(self::_("The ’Scuse may not be played in the penultimate trick"));
+            }
+        } else if ($currentSuitLed != 0) {
+            if ($card['type'] != $currentSuitLed) {
+                // The card does not match the suit led, and
+                // the player has at least one card of the needed suit
+                if ($atLeastOneOfSuitLed) { 
+                    throw new BgaUserException(sprintf(self::_("You must play a %s"), 
+                        $this->suits[$currentSuitLed]['nametr']), true);
+                } else if($card['type'] != 5 && $atLeastOneTrump) { 
+                    // The player has at least one trump
+                    throw new BgaUserException(
+                        sprintf(self::_("You must play a %s"), 
+                        $this->suits[5]['nametr']), true);
+                }
+            }
+        }
+    }
+
+    private function getPossibleCardsToPlay($playerId) {
+		// Loop the player hand, stopping at the first card which can be played
+		$playerCards = $this->cards->getCardsInLocation('hand', $playerId);
+		$possibleCards = [];
+		foreach ($playerCards as $playerCard) {
+			try {
+				$this->assertCardPlay($playerCard['id']);
+			} catch (\Exception $e) {
+				continue;
+			}
+			$possibleCards[] = $playerCard;
+		}
+		return $possibleCards;
+	}
+    
+
 //////////////////////////////////////////////////////////////////////////////
 //////////// Player actions
 ////////////
@@ -664,65 +737,35 @@ class GrossTarock extends Table {
         (note: each method below must match an input method in grosstarock.action.php)
     */
 
-    function playCard ( $card_id ) {
+    function playCard ($cardId) {
         // Check that this is the player's turn and that it is a "possible
         // action" at this game state (see states.inc.php),
         // and that it's in the player's hand, and legal to play.
-        self::checkAction( 'playCard' );
+        self::checkAction('playCard');
+		$playerId = self::getActivePlayerId();
 
-        $player_id = self::getActivePlayerId();
-        $player_hand = $this->cards->getCardsInLocation('hand', $player_id);
-        $currentSuitLed = self::getGameStateValue('suit_led');
+		// Check Rules
+        $this->assertCardPlay($cardId);
+        
+		$this->cards->moveCard($cardId, 'cardsontable', $playerId);
+		$currentCard = $this->cards->getCard($cardId);
 
 
-        // Check that the card is in this hand and gets its caracteristics
-        $bIsInHand = false;
-        $card = null;
-        $b_at_least_one_card_of_current_suit_led = false;
-        $b_at_least_one_trump = false;
-        foreach($player_hand as $current_card) {
-            if($current_card['id'] == $card_id) {
-                $bIsInHand = true;
-                $card = $current_card;
-            }
-
-            if ($current_card['type'] == $currentSuitLed &&
-                $current_card['type_arg'] != 22) {
-                $b_at_least_one_card_of_current_suit_led = true;
-            }
-            if ($current_card['type'] == 5 && $current_card['type_arg'] != 22 /* Trump (not the Fool) */) {
-                $b_at_least_one_trump = true;
-            }
-        }
-
-        if (!$bIsInHand) {
-            throw new BgaUserException(self::_("This card is not in your hand"));
-        }
-
-        if ($card['type_arg'] == 22) { // Fool
-            // It can be played anytime
-            // TODO except 2nd to last trick.
-        }
-        else if ($currentSuitLed != 0) {
-            if ($card['type'] != $currentSuitLed) {
-                // The card does not match the trick color
-                if ($b_at_least_one_card_of_current_suit_led) { // The player has at least one card of the needed color
-                    throw new BgaUserException(sprintf(self::_("You must play a %s"), $this->suits[$currentSuitLed]['nametr']), true);
-                }
-                else if($card['type'] != 5 && $b_at_least_one_trump) { // The player has at least one trump
-                    throw new BgaUserException(sprintf(self::_("You must play a %s"), $this->suits[5]['nametr']), true);
-                }
-            }
-        }
-
-        $this->cards->moveCard($card_id, 'cardsontable', $player_id);
-
-        // Add your game logic to play a card there
-        $currentCard = $this->cards->getCard($card_id);
-
+        
         // Set the trick color if it hasn't been set yet
-        if ($currentSuitLed == 0 && $card['type_arg'] != 22)
-            self::setGameStateValue( 'suit_led', $currentCard['type'] );
+        $currentSuitLed = self::getGameStateValue('suit_led');
+        
+        if ($currentSuitLed == 0 && $currentCard['type_arg'] != 22) {
+            self::setGameStateValue('suit_led', $currentCard['type']);
+        }
+        // TODO
+        // If the fool was led, get a named suit.
+        // if ($currentSuitLed == 0 && $currentCard['type_arg'] == 22) {
+        //     $this->gamestate->nextState('nameFool');
+        // }
+
+
+        // // And notify
         $cardValueDisplayed = $currentCard ['type_arg'];
         if ($currentCard['type'] != 5 && $currentCard['type_arg'] > 10) {
             $cardValueDisplayed =  $this->figures[$cardValueDisplayed]['symbol'];
@@ -730,15 +773,17 @@ class GrossTarock extends Table {
         if ($currentCard['type'] == 4 && $currentCard['type_arg'] == 22) {
             $cardValueDisplayed =  $this->trull[$cardValueDisplayed]['symbol'];
         }
+        
+
         self::notifyAllPlayers('playCard', clienttranslate('${player_name} plays ${value_displayed}${suit_displayed}'), array (
             'i18n' => array ('suit_displayed','value_displayed' ),
             'player_name' => self::getActivePlayerName(),
             'value_displayed' => $cardValueDisplayed,
             'suit_displayed' => $this->suits [$currentCard ['type']] ['symbol'],
-            'player_id' => $player_id,
+            'player_id' => $playerId,
             'suit' => $currentCard ['type'],
             'value' => $currentCard ['type_arg'],
-            'card_id' => $card_id,
+            'card_id' => $cardId,
         ));
         $this->gamestate->nextState('playCard');
     }
@@ -824,6 +869,19 @@ class GrossTarock extends Table {
         game state.
     */
 
+    function argPlayerTurn() {
+		// On player's turn, list possible cards
+		return [
+			'_private' => [
+				'active' => [
+					'possibleCards' => $this->getPossibleCardsToPlay(
+						self::getActivePlayerId()
+					),
+				],
+			],
+		];
+    }
+    
     function argGiveCards() {
         return array();
     }
@@ -1068,7 +1126,7 @@ class GrossTarock extends Table {
     }
 
     /*
-     * 32 - Active the next [trick?] player,
+     * 32 - Activate the next [trick?] player,
      * OR end the trick and go to the next trick
      * OR end the hand
      */
@@ -1099,27 +1157,30 @@ class GrossTarock extends Table {
                     $fool_owner_id = $card['location_arg'];
 
                     if ($last_trick) {
-                        $playersSql = implode(" OR ", array_map(
-                            function($id) { return "player_id=$id";},
-                            array_filter(
-                                array_keys(self::loadPlayersBasicInfos()),
-                                function($id) { return $id != $fool_owner_id; }
-                            )
-                        ));
+                        // TODO
+                        // A "fool slam" is only allowed in the french rules.
+                        // The fool is always lost in Grosstarock
+                        // $playersSql = implode(" OR ", array_map(
+                        //     function($id) { return "player_id=$id";},
+                        //     array_filter(
+                        //         array_keys(self::loadPlayersBasicInfos()),
+                        //         function($id) { return $id != $fool_owner_id; }
+                        //     )
+                        // ));
 
-                        // slam if the other player(s) took no tricks
-                        $foolslam = self::getUniqueValueFromDB( "SELECT sum(player_trick_number) num FROM player WHERE $playersSql" ) == 0;
-                        if ($foolslam) {
-                            // The team of the owner of the Fool has achieved a
-                            // Slam. The Fool wins the trick
-                            $winningColor = 5;
-                            $best_value_player_id = $fool_owner_id;
-                            $best_value = 22; // 22: nothing can beat that
-                            $fool_lost = false;
-                        } else {
+                        // // slam if the other player(s) took no tricks
+                        // $foolslam = self::getUniqueValueFromDB( "SELECT sum(player_trick_number) num FROM player WHERE $playersSql" ) == 0;
+                        // if ($foolslam) {
+                        //     // The team of the owner of the Fool has achieved a
+                        //     // Slam. The Fool wins the trick
+                        //     $winningColor = 5;
+                        //     $best_value_player_id = $fool_owner_id;
+                        //     $best_value = 22; // 22: nothing can beat that
+                        //     $fool_lost = false;
+                        // } else {
                             $fool_lost = true;
                             continue; // The fool can't win the trick
-                        }
+                        // }
                     } else {
                         $fool_lost = false;
                         continue;
@@ -1564,28 +1625,37 @@ class GrossTarock extends Table {
         you must _never_ use getCurrentPlayerId() or getCurrentPlayerName(), otherwise it will fail with a "Not logged" error message.
     */
 
-    function zombieTurn( $state, $active_player )
-    {
-    	$statename = $state['name'];
+    function zombieTurn( $state, $active_player ) {
+		$statename = $state['name'];
 
-        if ($state['type'] === "activeplayer") {
-            switch ($statename) {
-                default:
-                    $this->gamestate->nextState( "zombiePass" );
-                	break;
-            }
+		if ($state['type'] == 'activeplayer') {
+			switch ($statename) {
+				// case 'playerBid': TODO discardCards
+				// 	// Always pass
+				// 	$this->pass();
+				// 	return;
 
-            return;
-        }
+				case 'playerTurn':
+					// Loop the player hand, stopping at the first card which can be played
+					$playerCards = $this->cards->getCardsInLocation(
+						'hand', $activePlayer
+					);
+					foreach ($playerCards as $playerCard) {
+						try {
+							$this->assertCardPlay($playerCard['id']);
+						} catch (\Exception $e) {
+							continue;
+						}
+						break;
+					}
+					$this->playCard($playerCard['id']);
+					return;
+			}
+		}
 
-        if ($state['type'] === "multipleactiveplayer") {
-            // Make sure player is in a non blocking status for role turn
-            $this->gamestate->setPlayerNonMultiactive( $active_player, '' );
-
-            return;
-        }
-
-        throw new feException( "Zombie mode not supported at this game state: ".$statename );
+		throw new feException(
+			'Zombie mode not supported at this game state: ' . $statename // NOI18N
+		);
     }
 
 ///////////////////////////////////////////////////////////////////////////////////:

@@ -186,14 +186,12 @@ function (dojo, declare, easing) {
             console.log( 'Entering state: '+stateName , args);
 
             if (stateName == 'playerTurn') {
-                // if (!this.firstCardPlayed) {
-                //     this.firstCardPlayed = true;
-                //     var me = this;
-                //     setTimeout(function() { me.hideAllBubbles(); }, 2000);
-                // }
                 if (this.isCurrentPlayerActive()) {
                     this.canPlayCard = true;
-                    this.playerHand.setSelectionMode(1);
+                    this.playerHand.setSelection
+                    if (args.args._private.possibleCards) {
+						this.updatePossibleCards(args.args._private.possibleCards)
+					}
                 }
             }
 
@@ -220,6 +218,11 @@ function (dojo, declare, easing) {
         //
         onLeavingState: function (stateName) {
             console.log( 'Leaving state: '+stateName );
+
+            if (stateName === 'playerTurn') {
+				this.updatePossibleCards(null)
+            }
+            
 
             switch( stateName )
             {
@@ -399,6 +402,21 @@ function (dojo, declare, easing) {
                         '</strong>';
             }
         },
+
+        updatePossibleCards: function(cards) {
+			dojo.query('.stockitem--not-possible')
+				.removeClass('stockitem--not-possible')
+			if (cards === null) {
+				return
+			}
+			dojo.query('.stockitem').forEach(function(el) {
+				const id = el.id.match(/^myhand_item_(\d+)$/)[1]
+				const possible = cards.find(card => card.id == id)
+				if (!possible) {
+					el.classList.add('stockitem--not-possible')
+				}
+			})
+		},
 
         /*
          * Bubble management
