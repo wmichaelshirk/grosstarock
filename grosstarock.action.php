@@ -73,6 +73,19 @@ class action_grosstarock extends APP_GameAction {
         self::ajaxResponse();
     }
 
+    public function nameScuse() {
+        self::setAjaxMode();
+        $suit = self::getArg('suit', AT_posint, true);
+        $this->game->nameScuse($suit);
+        self::ajaxResponse();
+    }
+
+    public function requireScuse() {
+        self::setAjaxMode();
+        $this->game->requireScuse();
+        self::ajaxResponse();
+    }
+
 }
   
 

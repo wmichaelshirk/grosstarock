@@ -94,7 +94,8 @@ $machinestates = array(
         "descriptionmyturn" => clienttranslate('${you} must discard 3 cards'),
         "type" => "activeplayer",
         "possibleactions" => [ "discard" ],
-        "transitions" => [ "" => 21 ]
+        "transitions" => [ "" => 21 ],
+        "args" => "argPlayerDiscard"
     ],
     
 
@@ -112,7 +113,11 @@ $machinestates = array(
         "description" => "",
         "type" => "game",
         "action" => "stNextDeclarer",
-        "transitions" => array( "nextPlayer" => 20, "loopback" => 21, "firstTrick" => 29 )
+        "transitions" => [ 
+            "nextPlayer" => 20, 
+            "loopback" => 21, 
+            "firstTrick" => 29 
+        ]
     ],
 
 
@@ -130,7 +135,10 @@ $machinestates = array(
         "description" => "",
         "type" => "game",
         "action" => "stNewTrick",
-        "transitions" => array( "" => 31 )
+        "transitions" => [
+            "playerTurn" => 31,
+            "trick23" => 41
+        ]
     ],
     31 => [
         "name" => "playerTurn",
@@ -139,21 +147,65 @@ $machinestates = array(
         "type" => "activeplayer",
         "action" => "stPlayerTurn",
         "possibleactions" => ["playCard"],
-        "transitions" => ["playCard" => 32],
+        "transitions" => [
+            "playCard" => 32,
+            "leadScuse" => 40
+        ],
         'args' => 'argPlayerTurn'
     ],
-    32 => array(
+    32 => [
         "name" => "nextPlayer",
         "description" => "",
         "type" => "game",
         "action" => "stNextPlayer",
         "updateGameProgression" => true,
-        "transitions" => array( "nextPlayer" => 31, "nextTrick" => 30, "endHand" => 40 )
-    ),
+        "transitions" => [
+            "nextPlayer" => 31,
+            "nextPlayer23" => 41, 
+            "nextTrick" => 30, 
+            "endHand" => 50
+        ]
+    ],
     
+    // Naming of the ’Scuse
+    40 => [
+        "name" => "nameScuse",
+        "description" => clientTranslate('${actplayer} must name the ’Scuse'),
+        "descriptionmyturn" => clienttranslate('${you} must name the ’Scuse'),
+        "type" => "activeplayer",
+        "action" => "stNameScuse",
+        "possibleactions" => ["nameScuse"],
+        "transitions" => ["" => 32],
+        'args' => 'argNameScuse'
+    ],
+    41 => [
+        "name" => "playerTurn23",
+        "description" => clientTranslate('${actplayer} must play a card'),
+        "descriptionmyturn" => clienttranslate('${you} must play a card or '),
+        "type" => "activeplayer",
+        "action" => "stPlayerTurn",
+        "possibleactions" => [
+            "playCard",
+            "requireScuse"
+        ],
+        "transitions" => [
+            "playCard" => 32,
+            "leadScuse" => 40,
+            "requireScuse" => 42
+        ],
+        'args' => 'argPlayerTurn'
+    ],
+    42 => [
+        "name" => "unwindTrick23",
+        "description" => "",
+        "type" => "game",
+        "action" => "stUnwindTrick23",
+        "transitions" => [ "" => 31 ]
+    ],
+
 
     // End of the hand (scoring, etc...)
-    40 => array(
+    50 => array(
         "name" => "endHand",
         "description" => "",
         "type" => "game",

@@ -46,6 +46,7 @@ class view_grosstarock_grosstarock extends game_view {
             );
         }
 
+        $this->tpl['NAME_SCUSE'] = self::_("Please name the ’Scuse");
         $this->tpl['HAND'] = self::_("Hand");
         $this->tpl['NBR'] = $players_nbr_class;
         $this->tpl['CURRENT_STYLE'] = self::_("Current style:");

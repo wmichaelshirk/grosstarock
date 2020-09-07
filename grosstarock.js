@@ -67,6 +67,11 @@ function (dojo, declare, easing) {
             this.scoreWithPots = !!Number(gamedatas.score_with_pots)
 
 
+            this.bonuses = gamedatas.bonuses
+            this.figures = gamedatas.figures
+            this.suits = gamedatas.suits
+            this.trull = gamedatas.trull
+
             // setup pots - if there are 3 players, and that option is
             // selected.
             if (this.numberOfPlayers == 2 || !this.scoreWithPots) {
@@ -78,6 +83,9 @@ function (dojo, declare, easing) {
                 this.kingPot = new ebg.counter()
                 this.kingPot.create('kingpot')
                 this.kingPot.setValue(gamedatas.kingPot)
+                let potText = _("<br>The pots remain with the current dealer. Everyone contributes 20 points whenever a pot is empty; the dealer adds 5 points after discarding.")
+                this.addTooltipHtml('kingpot', _('The <b>King Pot</b>. One who wins the last trick with a King (<b>King Ultimo</b>) wins the contents of the pot; one who loses a King adds 5, or, on the last trick, doubles the pot.') + potText);
+                this.addTooltipHtml('pagatpot', _('The <b>Pagat Pot</b>. One who wins the last trick with the Pagat (<b>Pagat Ultimo</b>) wins the contents of the pot; one who loses the Pagat adds 5, or, on the last trick, doubles the pot.') + potText);
             }
 
             // Setting up player boards
@@ -111,6 +119,7 @@ function (dojo, declare, easing) {
             this.playerHand.setSelectionMode(1)
             dojo.connect(this.playerHand, 'onChangeSelection', this,
                 'onPlayerHandSelectionChanged');
+            this.playerHand.onItemCreate = dojo.hitch(this, 'onCreateCard');
 
 
             for (let suit = 1; suit <= 5; suit++) {
@@ -151,6 +160,9 @@ function (dojo, declare, easing) {
                 this.playCardOnTable(player_id, suit, value, card.id);
             }
 
+            // 	Buttons of scusePanel
+			this.connectClass('scusePanel__btn', 'onclick', 'onScusePanelBtnClick')
+
             // move pots to dealer
             if (this.scoreWithPots) {
                 const pots = dojo.byId('ultimo_pot_wrap')
@@ -169,8 +181,6 @@ function (dojo, declare, easing) {
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
 
-
-
             console.log( "Ending game setup" );
         },
 
@@ -178,17 +188,23 @@ function (dojo, declare, easing) {
         ///////////////////////////////////////////////////
         //// Game & client states
 
-        // onEnteringState: this method is called each time we are entering into a new game state.
-        //                  You can use this method to perform some user interface changes at this moment.
-        //
-        onEnteringState: function( stateName, args )
-        {
+        // onEnteringState: this method is called each time we are entering into
+        //      a new game state. You can use this method to perform some user
+        //      interface changes at this moment.
+        onEnteringState: function( stateName, args ) {
             console.log( 'Entering state: '+stateName , args);
 
-            if (stateName == 'playerTurn') {
+            if (stateName == 'discardCards' && this.isCurrentPlayerActive()) {
+                if (args.args._private.possibleCards) {
+                    this.updatePossibleCards(args.args._private.possibleCards)
+                }
+            }
+
+
+            if (stateName == 'playerTurn' || stateName == 'playerTurn23') {
                 if (this.isCurrentPlayerActive()) {
                     this.canPlayCard = true;
-                    this.playerHand.setSelection
+                    this.playerHand.setSelectionMode(1);
                     if (args.args._private.possibleCards) {
 						this.updatePossibleCards(args.args._private.possibleCards)
 					}
@@ -202,57 +218,55 @@ function (dojo, declare, easing) {
                 }
             }
 
+            if (stateName == 'nameScuse') {
+                if (this.isCurrentPlayerActive()) {
+                    this.canPlayCard = false;
+                    if (args.args._private.possibleSuits) {
+                        dojo.query('.scusePanel__btn--suit').addClass('disabled') 
+                        Object.values(args.args._private.possibleSuits)
+                            .forEach(suit => {
+                                dojo.query(`[data-suit="${suit}"]`)
+                                    .removeClass('disabled')
+                            })
+					}
+                    dojo.query('.scusePanel').addClass('scusePanel--visible')
+                }
+            }
+
             // Highlight active player
 			dojo.query('.playertable')
                 .removeClass('playerTables__table--active')
             if (args.active_player) {
                 this.getPlayerTableEl(args.active_player).classList
                     .add('playerTables__table--active')
-        }
-
-
+            }
         },
 
-        // onLeavingState: this method is called each time we are leaving a game state.
-        //                 You can use this method to perform some user interface changes at this moment.
-        //
+        // onLeavingState: this method is called each time we are leaving a game
+        //       state. You can use this method to perform some user interface
+        //       changes at this moment.
         onLeavingState: function (stateName) {
             console.log( 'Leaving state: '+stateName );
 
-            if (stateName === 'playerTurn') {
+            if (stateName === 'playerTurn' || stateName === 'playerTurn23' || 
+                    stateName == 'discardCards') {
 				this.updatePossibleCards(null)
             }
-            
-
-            switch( stateName )
-            {
-
-            /* Example:
-
-            case 'myGameState':
-
-                // Hide the HTML block we are displaying only during this game state
-                dojo.style( 'my_html_block_id', 'display', 'none' );
-
-                break;
-           */
-
-
-            case 'dummmy':
-                break;
+            if (stateName === 'nameScuse') {
+                dojo.query('.scusePanel').removeClass('scusePanel--visible')
             }
+
         },
 
-        // onUpdateActionButtons: in this method you can manage "action buttons" that are displayed in the
-        //                        action status bar (ie: the HTML links in the status bar).
-        //
-        onUpdateActionButtons: function( stateName, args )
-        {
+        // onUpdateActionButtons: in this method you can manage "action buttons"
+        //      that are displayed in the action status bar (ie: the HTML links 
+        //      in the status bar).
+        onUpdateActionButtons: function (stateName, args) {
             console.log( 'onUpdateActionButtons: '+stateName );
 
-            if( this.isCurrentPlayerActive() ) {
+            if (this.isCurrentPlayerActive()) {
 
-                switch( stateName ) {
+                switch (stateName) {
                     case 'discardCards':
                         // this.mustNotDiscard = args.cards;
                         this.canPlayCard = false;
@@ -262,32 +276,88 @@ function (dojo, declare, easing) {
                         this.playerHand.setSelectionMode(2);
                         break;
 
-
-/*
-                 Example:
-
-                 case 'myGameState':
-
-                    // Add 3 action buttons in the action status bar:
-
-                    this.addActionButton( 'button_1_id', _('Button 1 label'), 'onMyMethodToCall1' );
-                    this.addActionButton( 'button_2_id', _('Button 2 label'), 'onMyMethodToCall2' );
-                    this.addActionButton( 'button_3_id', _('Button 3 label'), 'onMyMethodToCall3' );
-                    break;
-*/
+                
+                    case 'playerTurn23':
+                        this.addActionButton(
+                            "btn_demand",                           // #id
+                            _("Require the ’Scuse to be played"),   // label
+                            'onRequireScuse',                       // method
+                        )
+                        this.addTooltipHtml('btn_demand', _('The ’Scuse has not yet been played; if not played this trick, it must be played to the last trick.'))
+                        break;
                 }
             }
         },
 
         ///////////////////////////////////////////////////
         //// Utility methods
-
         /*
-
-            Here, you can defines some utility methods that you can use everywhere in your javascript
-            script.
-
+            Here, you can defines some utility methods that you can use 
+            everywhere in your javascript script.
         */
+
+        // @Override: client side magic to massage log arguments into 
+        // displayable localized text
+        format_string_recursive: function(log, args) {
+            try {
+                if (log && args && !args.processed) {
+                    args.processed = true;
+
+                    // List of declarations => single localized string
+                    if (args.declarations !== undefined) {
+                        args.declarations = this.toLocalizedDeclarationList(args.declarations)
+                    }
+
+                    // Format cards
+                    if (args.card !== undefined) {
+                        const {type: suit, type_arg: rank} = args.card
+                        if (suit > 4) {
+                            name = rank == 22 ? this.trull[rank].symbol : rank;
+                            colour = 'blue';
+                        } else {
+                            let suitrank = rank
+                            if ((suit == 1 || suit == 3) && rank <= 10) {
+                                suitrank = 11 - rank
+                            }
+                            name = (this.figures[rank]?.symbol || suitrank) + this.suits[suit].symbol
+                            colour = (suit == 1 || suit == 3) ? 'red' : 'black';
+                        }
+                        args.card_name = dojo.string.substitute('<strong style="color:${colour};">${name}</strong>', {
+                            colour: colour,
+                            name: name
+                        });
+                    }
+
+                }
+            } catch (e) {
+                console.error('Exception while formatting "%o" with "%o":\n%o', log, args, e);
+            }
+            return this.inherited(arguments);
+        },
+
+
+        toLocalizedDeclarationList: function (declarations) {
+            let message = "Pass"
+            if (declarations && declarations.length) {
+                message = declarations.map(d => {
+                    const replacements = {}
+                    if (/\{num\}/.test(d.bonus_name)) {
+                        replacements.num = d.bonus_arg
+                    }
+                    if (/\{insuit\}/.test(d.bonus_name)) {
+                        replacements.insuit = _(this.suits[d.bonus_arg].insuit)
+                    }
+                    if (/\{withoutrank\}/.test(d.bonus_name)) {
+                        replacements.withoutrank = _(this.figures[d.bonus_arg2].withoutrank)
+                    }
+                    if (/\{withoutsuit\}/.test(d.bonus_name)) {
+                        replacements.withoutsuit = _(this.suits[d.bonus_arg].withoutsuit)
+                    }
+                    return dojo.string.substitute(_(d.bonus_name), replacements)
+                }).join(', ')
+            }
+            return message
+        }, 
 
         // Get card unique identifier based on its suit and value
         getCardUniqueId: function(suit, value) {
@@ -308,13 +378,13 @@ function (dojo, declare, easing) {
             return this.playerHand.getSelectedItems().map(item => item.id)
         },
 
-        makeAjaxCall: function(methodName, args) {
+        makeAjaxCall: function(methodName, args, onError = error => {}) {
             $('pagemaintitletext').innerHTML = _('Sending move to server...')
             $('generalactions').innerHTML = ''
             args.lock = true
             this.ajaxcall(
                 `/${this.game_name}/${this.game_name}/${methodName}.html`,
-                args, this, result=>{}, is_error=>{})
+                args, this, result=>{}, onError)
         },
 
         /*
@@ -380,6 +450,7 @@ function (dojo, declare, easing) {
             }
 
             // In any case: move it to its final destination
+            this.createCardTooltip(`cardontable_${playerId}`, card_id);
             this.slideToObject(cardEl, target).play();
         },
 
@@ -422,8 +493,6 @@ function (dojo, declare, easing) {
          * Bubble management
          */
         showBubble: function(player, message) {
-            // 
-             
             const itemId = this.getPlayerTableEl(player, 'bubble')
             $(itemId).innerHTML = message;
             dojo.style(itemId, { display: 'block', opacity: 1 });
@@ -455,16 +524,13 @@ function (dojo, declare, easing) {
         
         ///////////////////////////////////////////////////
         //// Player's action
-
         /*
-
-            Here, you are defining methods to handle player's action (ex: results of mouse click on
-            game objects).
+            Here, you are defining methods to handle player's action (ex: 
+                results of mouse click on game objects).
 
             Most of the time, these methods:
             _ check the action is possible at this game state.
             _ make a call to the game server
-
         */
         onPlayerHandSelectionChanged: function () {
             this.checkIfPlay(false)
@@ -483,66 +549,26 @@ function (dojo, declare, easing) {
                     this.showMessage(message, 'error');
                     return;
                 }
-                // TODO
-                // for (var key in this.mustNotDiscard) {
-                //     var keep = this.mustNotDiscard[key];
-                //     if (selected.includes(String(keep))) {
-                //         this.showMessage(_('You cannot discard kings, honours, or the card about to be called'), 'error');
-                //         return;
-                //     }
-                // }
-                // var discardableNonTrumps = this.countDiscardableNonTrumps();
-                // var trumpsToDiscard = this.countTrumps(selected);
-                // if (trumpsToDiscard > 0 && trumpsToDiscard > toDiscard - discardableNonTrumps) {
-                //     this.confirmationDialog( _('Do you really want to discard more trumps than you are forced to?'),
-                //         dojo.hitch(this, function() {
-                //             this.makeAjaxCall('discard', { 'cards': selected.join(',') });
-                //         })
-                //     );
-                
-                // } else {
-                    this.makeAjaxCall('discard', { 
+
+                const prevText = $('pagemaintitletext').innerHTML
+                this.makeAjaxCall('discard', { 
                         'cards': selected.join(',') 
-                    })
-                // }
+                    }, error => {
+                        $('pagemaintitletext').innerHTML = prevText
+                        this.addActionButton("btn_discard", _("Discard"), 
+                                'onButtonClickForDiscard', null, false, 'blue');
+                    }
+                )
             }
         },
 
-        /* Example:
-
-        onMyMethodToCall1: function( evt )
-        {
-            console.log( 'onMyMethodToCall1' );
-
-            // Preventing default browser reaction
-            dojo.stopEvent( evt );
-
-            // Check that this action is possible (see "possibleactions" in states.inc.php)
-            if( ! this.checkAction( 'myAction' ) )
-            {   return; }
-
-            this.ajaxcall( "/grosstarock/grosstarock/myAction.html", {
-                                                                    lock: true,
-                                                                    myArgument1: arg1,
-                                                                    myArgument2: arg2,
-                                                                    ...
-                                                                 },
-                         this, function( result ) {
-
-                            // What to do after the server call if it succeeded
-                            // (most of the time: nothing)
-
-                         }, function( is_error) {
-
-                            // What to do after the server call in anyway (success or failure)
-                            // (most of the time: nothing)
-
-                         } );
+        onRequireScuse: function () {
+            if (this.checkAction('requireScuse')) {
+                this.makeAjaxCall('requireScuse', { })
+            }
         },
-
-        */
-
-        onChangeForCardStyle : function(event) {
+       
+        onChangeForCardStyle: function(event) {
             // Get the current style and the target style
             var select = event.currentTarget;
             var current_style = 'tarot_' + this.current_style_id;
@@ -598,17 +624,76 @@ function (dojo, declare, easing) {
         },
         
 
+        onScusePanelBtnClick: function(e) {
+			e.preventDefault()
+			e.stopPropagation()
+			const namedSuit = e.currentTarget.getAttribute('data-suit')
+            this.makeAjaxCall('nameScuse', { 'suit': namedSuit })
+        },
+        
+        onCreateCard: function(cardDiv, cardType, cardItemId) {
+            this.createCardTooltip(cardItemId, cardType);
+        },
+
+        createCardTooltip: function(htmlId, cardId) {
+            let suit = Math.min(Math.floor(cardId / 14), 4)
+            let rank = cardId - (suit * 14)
+            suit++
+            rank++
+            let  tooltipText = ''
+            if (suit == 5 && rank == 22) {
+                tooltipText = this.format_string_recursive(_('‘${trullname}’ (${card_name}), worth 5 points'), {
+                    trullname: this.trull[rank].name,
+                    card: { type: suit, type_arg: rank }
+                })
+                tooltipText += "<br>May be played at any time, except the penultimate trick."
+                tooltipText += "<br>Lost if played to the last trick, otherwise always kept."
+                tooltipText += "<br>May be led as any suit still in play."
+                                
+            } else {
+                let value = 0;
+                let rankName = rank
+                if (suit < 5) {
+                    if (this.figures[rank]) {
+                        rankName = _(this.figures[rank].name)
+                    } else if (suit == 1 || suit == 3) {
+                        rankName = 11 - rank
+                    }
+                }
+                value = suit < 5 ? Math.max(rank - 10, 0) : ([1,21].includes(rank) && 5 )
+                tooltipText = this.format_string_recursive(_('${name} of ${suitOf} (${card_name})'), { 
+                    name: rankName, 
+                    suitOf: _(this.suits[suit].nameof), 
+                    card: {
+                        type: suit,
+                        type_arg: rank
+                    }
+                })
+                if (value) {
+                    tooltipText += dojo.string.substitute(_(', worth ${n} point(s)'), { n: value })
+                }
+                // trull
+                if (suit == 5 && [1, 21, 22].includes(rank)) {
+                    tooltipText = dojo.string.substitute(_( "‘${trullname}’, or "), 
+                        { trullname: this.trull[rank].name }) + tooltipText
+                }
+                if ((suit == 5 && rank == 1) || (suit != 5 && rank == 14)) {
+                    tooltipText += _('<br/>An <b>Ultimo Card.</b> Winning the last trick with this card earns a bonus; losing the last trick with this card earns a penalty. It is always in play.');
+                }
+            }
+            this.addTooltipHtml(htmlId, tooltipText);
+        },
+
         ///////////////////////////////////////////////////
         //// Reaction to cometD notifications
-
         /*
             setupNotifications:
 
-            In this method, you associate each of your game notifications with your local method to handle it.
+            In this method, you associate each of your game notifications with 
+            your local method to handle it.
 
-            Note: game notification names correspond to "notifyAllPlayers" and "notifyPlayer" calls in
-                  your grosstarock.game.php file.
-
+            Note: game notification names correspond to "notifyAllPlayers" and 
+            "notifyPlayer" calls in your grosstarock.game.php file.
         */
         setupNotifications: function() {
             console.log( 'notifications subscriptions setup' );
@@ -621,11 +706,14 @@ function (dojo, declare, easing) {
             this.notifqueue.setSynchronous('declare', 1000)
             dojo.subscribe('checkForAutomaticPlay', this,  "notifCheckForAutomaticPlay")
             dojo.subscribe('playCard', this, 'notifyPlayCard')
+            dojo.subscribe('nameSuit', this, 'notifyNameSuit')
+            dojo.subscribe('requireScuse', this, 'notifyRequireScuse')
+            dojo.subscribe('returnToHand', this, 'notifyReturnToHand')
+            this.notifqueue.setSynchronous('returnToHand', 1000)
             dojo.subscribe('trickWin', this, 'notifyTrickWin')
             this.notifqueue.setSynchronous('trickWin', 1000)
             dojo.subscribe('giveAllCardsToPlayer', this, 'notifyGiveAllCardsToPlayer')
             dojo.subscribe('newScores', this, 'notifyNewScores')
-            dojo.subscribe('handResult', this, 'notifyHandResult');
 
 
             dojo.subscribe('log', this, 'notifyLog')
@@ -666,7 +754,6 @@ function (dojo, declare, easing) {
         },
 
         notifyDealerDiscard: function (notif) {
-            console.log(notif)
             notif.args.cards.forEach(card => 
                 this.playerHand.removeFromStockById(
                     card, this.getPlayerTableEl(this.player_id, 'card')))
@@ -675,14 +762,47 @@ function (dojo, declare, easing) {
 
         notifyDeclarations: function (notif) {
             const player = notif.args.player_id
-            const message = notif.args.declarations
-            this.showBubble(player, message)
+            const declarations = notif.args.declarations
+            this.showBubble(player, declarations)
         },
 
         notifyPlayCard: function (notif) {
             // play card on the table
-            this.playCardOnTable(notif.args.player_id, notif.args.suit, 
-                notif.args.value, notif.args.card_id);
+            const suit = notif.args.card.type
+            const value = notif.args.card.type_arg
+            const id = notif.args.card.id
+            this.playCardOnTable(notif.args.player_id, suit, value, id);
+        },
+
+        notifyNameSuit: function (notif) {
+            const player = notif.args.playerId
+            const suit = notif.args.suit
+            this.showBubble(player, suit)
+        },
+
+        notifyRequireScuse: function (notif) {
+            const player = notif.args.playerId
+            this.showBubble(player, _('Please play the ’Scuse'))
+        },
+
+        notifyReturnToHand: function (notif) {
+            const card = notif.args.card
+            const player = notif.args.player
+
+            const cardEl = dojo.byId(`cardontable_${player}`)
+            if (player != this.player_id) {
+                // Some opponent played a card
+                // Move card from player panel                
+                const target = this.getPlayerTableEl(player, 'avatar')
+                const anim = this.slideToObject(cardEl, target, 1000);
+                dojo.connect(anim, 'onEnd', () => this.fadeOutAndDestroy(cardEl, 1000))
+                anim.play()
+            } else {
+                const suit = card.type;
+                const value = card.type_arg;
+                this.playerHand.addToStockWithId(this.getCardUniqueId(suit, value), card.id, `cardontable_${player}`);
+                dojo.destroy(cardEl)
+            }
         },
 
         notifCheckForAutomaticPlay: function(notif) {
@@ -707,10 +827,6 @@ function (dojo, declare, easing) {
 			// 		me.updatePlayerTrickCount(notif.args.player_id, notif.args.trick_won)
 			// 	})
 			// }, 1500)
-            
-            
-            // We do nothing here (just wait in order players can view the 4
-            // cards played before they're gone.
         },
 
         notifyGiveAllCardsToPlayer : function(notif) {
@@ -745,9 +861,6 @@ function (dojo, declare, easing) {
                     dojo.connect(anim, 'onEnd', function(node) {dojo.destroy(cardEl)});
                 }
 
-                // dojo.connect(anim, 'onEnd', function(node) {
-                //     dojo.destroy(cardEl)
-                // });
                 anim.play();
             }
         },
@@ -766,68 +879,9 @@ function (dojo, declare, easing) {
             }
         },
 
-        notifyHandResult: function(notification) {
-            this.showResultDialog(notification.args);
-        },
-
-        showResultDialog: function(args) {
-
-            console.log(args)
-            // Announcements
-            // in play
-            // ultimos
-            // nill / slam
-            // cards
-            const table = this.buildScoreTable(args)
-            var dialogHtml = `<div style="text-align: center;">
-                <div style="margin-top: 25px; margin-bottom: 15px;">testing</div>
-                ${table}
-                <a class="bgabutton bgabutton_blue" id="btn_scoringDialog_ok">
-                    ${_('OK')}
-                </a>
-            </div>`
-
-            const scoreDialogue = new ebg.popindialog();
-            scoreDialogue.create('scoringDialog');
-            scoreDialogue.setTitle( _("Result of this hand") );
-            scoreDialogue.setContent( dialogHtml );
-            scoreDialogue.show();
-
-            dojo.connect($('btn_scoringDialog_ok'), 'onclick', this, evt => {
-                evt.preventDefault()
-                scoreDialogue.destroy()
-            })
-        },
-
         notifyLog: function(notif) {
             console.log(notif)
         },
 
-        /* */
-        buildScoreTable: function(args) {
-            const scoringFeatures = Object.values(args.scores)[0].map(s => s[0])
-            const players = Object.keys(args.scores)
-            console.log(scoringFeatures)
-            return `<table class="scoringTable">
-                <thead>
-                    <tr><th></th>
-                        ${players.map(p => `<th>${p}</th>`)}
-                    </tr>
-                </thead>
-                <tbody>
-                ${scoringFeatures.map((feature, i) => 
-                    `<tr>
-                        <th>${_(feature)}</th>
-                        ${players.map(p => `<td>${args.scores[p][i][1] || ''}</td>`)}
-                    </tr>`)
-                }
-                </tbody>
-                <tfoot>
-                    <tr><th>${_('Total')}</th>
-                        ${players.map(p => `<td>${args.points[p] || ''}</td>`)}
-                    </tr>
-                </tfoot>
-            </table>`
-        },
    });
 });

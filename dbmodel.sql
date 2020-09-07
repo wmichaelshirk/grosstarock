@@ -37,9 +37,10 @@ CREATE TABLE IF NOT EXISTS `card` (
 CREATE TABLE IF NOT EXISTS `bonuses` (
   `bonus_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `bonus_name` varchar(64) NOT NULL COMMENT '${arg} Matadors, etc',
-  `bonus_arg` varchar(16) NULL COMMENT '3, 10, abundant, etc',
+  `bonus_arg` varchar(16) NULL COMMENT '3, 10, in Hearts, etc',
+  `bonus_arg2` varchar(16) NULL COMMENT 'without the Queen, etc',
   `bonus_player` int(11) NOT NULL COMMENT 'Id of owner',
-  `bonus_value` int(11) NOT NULL COMMENT '5, 10, 15, etc',
+  `bonus_value` int(11) NULL COMMENT '5, 10, 15, etc',
   `bonus_pot_value` int(11) NOT NULL DEFAULT 0 COMMENT 'Pot value if applicable',
   PRIMARY KEY (`bonus_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;

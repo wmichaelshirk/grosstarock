@@ -65,9 +65,30 @@
         </div>
         
     </div>
+    <div class="scusePanel">
+        <div class="scusePanel__title">
+            {NAME_SCUSE}
+        </div>
+        <div class="scusePanel__suits">
+            <a class="scusePanel__btn scusePanel__btn--suit" data-suit="1">
+                <span class="card-suit-icon card-suit-icon--heart"/>
+            </a>
+            <a class="scusePanel__btn scusePanel__btn--suit" data-suit="2">
+                <span class="card-suit-icon card-suit-icon--club"/>
+            </a>
+            <a class="scusePanel__btn scusePanel__btn--suit" data-suit="3">
+                <span class="card-suit-icon card-suit-icon--diamond"/>
+            </a>
+            <a class="scusePanel__btn scusePanel__btn--suit" data-suit="4">
+                <span class="card-suit-icon card-suit-icon--spade"/>
+            </a>
+            <a class="scusePanel__btn scusePanel__btn--suit" data-suit="5">
+                <span class="card-suit-icon card-suit-icon--trump"/>
+            </a>
+        </div>
+    </div>
     <div id="right">
         <div id='hand_count_wrap' class='whiteblock tarok_sidebox'></div>
-        
     </div>
 </div>
   
