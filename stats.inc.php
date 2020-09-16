@@ -57,51 +57,70 @@
 $stats_type = array(
 
     // Statistics global to table
-    "table" => array(
-
-        "turns_number" => array("id"=> 10,
-                    "name" => totranslate("Number of turns"),
-                    "type" => "int" ),
-
-        // Hand with Pagat Ultimo
-        // Hands with King Ultimo
-        // Hands with Bagud
-        // Hands with Misere
-        // hands with Slam
-/*
-        Examples:
-
-
-        "table_teststat1" => array(   "id"=> 10,
-                                "name" => totranslate("table test stat 1"), 
-                                "type" => "int" ),
-                                
-        "table_teststat2" => array(   "id"=> 11,
-                                "name" => totranslate("table test stat 2"), 
-                                "type" => "float" )
-*/  
-    ),
+    "table" => [
+        "pagat_ultimo" => [
+            "id"=> 10,
+            "name" => totranslate("Hands with Pagat Ultimo"),
+            "type" => "int"
+        ],
+        "king_ultimo" => [
+            "id"=> 11,
+            "name" => totranslate("Hands with King Ultimo"),
+            "type" => "int"
+        ],
+        "failed_ultimo" => [
+            "id"=> 12,
+            "name" => totranslate("Hands with Failed Ultimo"),
+            "type" => "int"
+        ],
+        "nill" => [
+            "id"=> 13,
+            "name" => totranslate("Hands with <i>Misère</i>"),
+            "type" => "int"
+        ],
+        "slam" => [
+            "id"=> 14,
+            "name" => totranslate("Hands with <i>Tout</i>"),
+            "type" => "int"
+        ],
+        "last_trick" => [
+            "id"=> 15,
+            "name" => totranslate("Ordinary Hands"),
+            "type" => "int"
+        ],
+        "avg_declarations" => [
+            "id"=> 16,
+            "name" => totranslate("Average Declaration value"),
+            "type" => "float"
+        ],
+    ],
     
     // Statistics existing for each player
-    "player" => array(
-
-        "turns_number" => array("id"=> 10,
-                    "name" => totranslate("Number of turns"),
-                    "type" => "int" ),
-    
-/*
-        Examples:    
-        
-        
-        "player_teststat1" => array(   "id"=> 10,
-                                "name" => totranslate("player test stat 1"), 
-                                "type" => "int" ),
-                                
-        "player_teststat2" => array(   "id"=> 11,
-                                "name" => totranslate("player test stat 2"), 
-                                "type" => "float" )
-
-*/    
-    )
-
+    "player" => [
+        "ultimos_tried" => [
+            "id"=> 10,
+            "name" => totranslate("Ultimos attempted"),
+            "type" => "int"
+        ],
+        "won_ultimos" => [
+            "id"=> 11,
+            "name" => totranslate("Ultimos won"),
+            "type" => "int"
+        ],
+        "won_last_tricks" => [
+            "id"=> 12,
+            "name" => totranslate("Last tricks won"),
+            "type" => "int"
+        ],
+        "avg_declarations" => [
+            "id"=> 13,
+            "name" => totranslate("Average Declaration value"),
+            "type" => "float"
+        ],
+        "avg_card_points" => [
+            "id"=> 14,
+            "name" => totranslate("Average Card Points taken"),
+            "type" => "float"
+        ]
+    ]
 );

@@ -80,13 +80,21 @@
 	--avatar-radius: 1em;
 }
 
-.tarot_0 { --cardurl: url('img/tarot_0.png'); }
-.tarot_1 { --cardurl: url('img/tarot_1.png'); }
-.tarot_2 { --cardurl: url('img/tarot_2.png'); }
-.tarot_3 {
-    --cardurl: url('img/tarot_3.png');
+.tarot_0 > .cardontable { background-image: url('img/tarot_0.png'); }
+.tarot_1 > .cardontable { background-image: url('img/tarot_1.png'); }
+.tarot_2 > .cardontable { background-image: url('img/tarot_2.png'); }
+.tarot_3 > .cardontable {
+    background-image: url('img/tarot_3.png');
     --cardwidth: 72px;
     --cardheight: 139px;
+}
+
+.cardontable {
+    position: absolute;
+    width: var(--cardwidth);
+    height: var(--cardheight);
+	border-radius: .5em;
+    box-shadow: rgba(0, 0, 0, 0.25) 2px 4px 5px; /* coinche */
 }
 
 
@@ -304,16 +312,6 @@
 }
 
 
-
-.cardontable {
-    position: absolute;
-    width: var(--cardwidth);
-    height: var(--cardheight);
-	background-image: var(--cardurl);
-	border-radius: .5em;
-    box-shadow: rgba(0, 0, 0, 0.25) 2px 4px 5px; /* coinche */
-}
-
 .scoringTable th {
     font-weight: bold;
 }
@@ -448,7 +446,7 @@
 }
 
 .playerTables__table--active .playerTables__avatar-wrapper {
-	border: 4px solid rgba(255, 255, 255, 0.5);
+	border: 4px solid rgba(255, 255, 255, 0.65);
 }
 
 .playerTables__avatar {
@@ -458,7 +456,8 @@
 	background-size: cover;
 	background-repeat: no-repeat;
     background-position: 50% 50%;
-    border-radius: var(--avatar-radius);
+	/* border-radius: var(--avatar-radius); */
+	border-radius: 50%;
 }
 
 
@@ -612,4 +611,8 @@
 		#fefefe 100%
 	);
 	color: #000;
+}
+
+.spectatorMode #myhand_wrap {
+    display: none;
 }

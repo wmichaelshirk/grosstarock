@@ -92,7 +92,7 @@
     </div>
 </div>
   
-<div id="myhand_wrap">
+<div id="myhand_wrap" class="whiteblock">
     <div id="myhand"></div>
 </div>
 

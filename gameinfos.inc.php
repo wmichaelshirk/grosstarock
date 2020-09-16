@@ -20,7 +20,7 @@ $gameinfos = array(
 'designer' => '(Uncredited)',
 
 // Game artist (or game artists, separated by commas)
-'artist' => '(Uncredited)',
+'artist' => 'Tom O’Neill & Dr. Yoav Ben-Dov, www.cbdtarot.com',
 
 // Year of FIRST publication of this game. Can be negative.
 'year' => 1720,
@@ -35,7 +35,9 @@ $gameinfos = array(
 'publisher_bgg_id' => 171,
 
 // Board game geek ID of the game
-'bgg_id' => 0,
+// "Tarot" - this is too broad, and bgg has wrong info, and points it to
+// 'French Tarot', but there you go.
+'bgg_id' => 4505, 
 
 
 // Players configuration that can be played (ex: 2 to 4 players)
@@ -43,7 +45,7 @@ $gameinfos = array(
 
 // Suggest players to play with this number of players. Must be null if there
 // is no such advice, or if there is only one possible player configuration.
-'suggest_player_number' => null,
+'suggest_player_number' => 3,
 
 // Discourage players to play with these numbers of players. Must be null if
 // there is no such advice.
@@ -148,12 +150,7 @@ $gameinfos = array(
 // A good length for this text is between 100 and 150 words (about 6 to 9 lines 
 // on a standard display)
 'presentation' => array(
-    totranslate('Grosstarock is an old three-handed card game of the Tarock ' .
-    'family played with a full 78-card Tarot pack. It was probably introduced' .
-    ' into the southern German states around 1720 but spread rapidly into ' .
-    'Austria and northwards as far as the Netherlands and Scandinavia. It ' .
-    'only survives today in Denmark where it is called Tarok, but is also ' .
-    'referred to in English as Danish Tarok. - Wikipedia'),
+    totranslate('Grosstarock is an old three-handed card game of the Tarock family played with a full 78-card Tarot pack. It was probably introduced into the southern German states around 1720, but spread rapidly into Austria and northwards as far as the Netherlands and Scandinavia. It only survives today in Denmark where it is called Tarok, but is also referred to in English as Danish Tarok. - Wikipedia'),
 ),
 
 // Games categories

@@ -27,19 +27,33 @@
  *
  */
 
+$no2player = totranslate(' This option is not applicable to two-player.');
+$length2player = totranslate('Two player games are played to 100 points');
 $game_options = [
 
     100 => [
         'name' => totranslate( 'Game length' ),
         'values' => [
-            3 => [ 'name' => totranslate( 'Very short - 3 hands' ) ],
-            6 => [ 'name' => totranslate( 'Short - 6 hands' ) ],
-            9 => [ 'name' => totranslate( 'Medium - 9 hands' ) ],
-            12 => [ 'name' => totranslate( 'Long - 12 hands' ) ],
-            15 => [ 'name' => totranslate( 'Very long - 15 hands' ) ]
-        ],
-        'displaycondition' => [
-            [ 'type' => 'otheroptionisnot', 'id' => 201, 'value' => 1 ]
+            3 => [ 
+                'name' => totranslate( 'Very short - 3 hands' ),
+                'description' => $length2player
+            ],
+            6 => [
+                'name' => totranslate( 'Short - 6 hands' ),
+                'description' => $length2player
+            ],
+            9 => [
+                'name' => totranslate( 'Medium - 9 hands' ),
+                'description' => $length2player
+            ],
+            12 => [
+                'name' => totranslate( 'Long - 12 hands' ),
+                'description' => $length2player
+            ],
+            15 => [
+                'name' => totranslate( 'Very long - 15 hands' ),
+                'description' => $length2player
+            ]
         ],
     ],
     101 => [
@@ -47,12 +61,12 @@ $game_options = [
         'values' => [
             1 => [
                 'name' => totranslate('Yes'),
-                'description' => totranslate('Increased base value of King and Pagat Ultimos, and Pot bonus for wins and losses.'),
+                'description' => totranslate('Increased base value of King and Pagat Ultimos, and Pot bonus for wins and losses.') . $no2player,
                 'nobeginner' => true,
             ],
             0 => [
                 'name' => totranslate('No'),
-                'description' => totranslate('Lower base value for King and Pagat Ultimos. Card points become more important.')
+                'description' => totranslate('Lower base value for King and Pagat Ultimos. Card points become more important.') . $no2player
             ],
         ],
     ],
@@ -86,7 +100,7 @@ $game_preferences = [
             1 =>['name' => totranslate('French deck: Modern')],
             2 =>['name' => totranslate('French deck: Grimaud')],
             3 =>['name' => totranslate('Belgian deck: Animals')],
-            4 =>['name' => totranslate('French deck: "Italian"(CBD)')]
+            4 =>['name' => totranslate('French deck: "Italian"')]
         ]
     ],
 

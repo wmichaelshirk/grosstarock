@@ -1,11 +1,13 @@
 <?php
 /**
  *------
- * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
- * GrossTarock implementation : © <Your name here> <Your email address here>
+ * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel 
+ * Colin <ecolin@boardgamearena.com>
+ * GrossTarock implementation : © W Michael Shirk <wmichaelshirk@gmail.com>
  *
- * This code has been produced on the BGA studio platform for use on https://boardgamearena.com.
- * See http://en.doc.boardgamearena.com/Studio for more information.
+ * This code has been produced on the BGA studio platform for use on 
+ * https://boardgamearena.com. See http://en.doc.boardgamearena.com/Studio for
+ * more information.
  * -----
  * 
  * grosstarock.action.php
@@ -35,29 +37,7 @@ class action_grosstarock extends APP_GameAction {
             self::trace( "Complete reinitialization of board game" );
         }
   	} 
-  	
 
-
-    /*
-    
-    Example:
-  	
-    public function myAction()
-    {
-        self::setAjaxMode();     
-
-        // Retrieve arguments
-        // Note: these arguments correspond to what has been sent through the javascript "ajaxcall" method
-        $arg1 = self::getArg( "myArgument1", AT_posint, true );
-        $arg2 = self::getArg( "myArgument2", AT_posint, true );
-
-        // Then, call the appropriate method in your game logic, like "playCard" or "myAction"
-        $this->game->myAction( $arg1, $arg2 );
-
-        self::ajaxResponse( );
-    }
-    
-    */
     public function playCard() {
       self::setAjaxMode();
       $card_id = self::getArg("id", AT_posint, true);

@@ -29,16 +29,13 @@ function (dojo, declare, easing) {
     return declare("bgagame.grosstarock", ebg.core.gamegui, {
 
         constructor: function() {
-            console.log('grosstarock constructor');
-
             // others
             this.card_width = 70;
             this.card_height = 129;
 
-            // // TDM
+            // TDM
             this.tdm_card_width = 72;
             this.tdm_card_height = 139;
-
         },
 
         /*
@@ -57,8 +54,6 @@ function (dojo, declare, easing) {
         */
 
         setup: function (gamedatas) {
-            console.log( "Starting game setup" );
-            console.log(gamedatas)
             this.canPlayCard = false;
 
             this.numberOfPlayers = Object.keys(this.gamedatas.players)
@@ -108,10 +103,10 @@ function (dojo, declare, easing) {
 
             // Player hand widget
             this.playerHand = new ebg.stock();
-            this.playerHand
-                .create( this, $('myhand'), 
+            this.playerHand.create( this, $('myhand'), 
                 this.current_style_id === 3 ? this.tdm_card_width : this.card_width,
-                this.current_style_id === 3 ? this.tdm_card_height : this.card_height);
+                this.current_style_id === 3 ? this.tdm_card_height : this.card_height
+            );
             this.playerHand.image_items_per_row = 14;
             this.playerHand.centerItems = true;
             this.playerHand.setOverlap( 75, 0 )
@@ -180,8 +175,6 @@ function (dojo, declare, easing) {
             
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
-
-            console.log( "Ending game setup" );
         },
 
 
@@ -192,7 +185,10 @@ function (dojo, declare, easing) {
         //      a new game state. You can use this method to perform some user
         //      interface changes at this moment.
         onEnteringState: function( stateName, args ) {
-            console.log( 'Entering state: '+stateName , args);
+            if (stateName == 'newTrick') {
+                [...dojo.query('.playertable')]
+                    .forEach(el => dojo.style(el, 'z-index', 1))
+            }
 
             if (stateName == 'discardCards' && this.isCurrentPlayerActive()) {
                 if (args.args._private.possibleCards) {
@@ -209,6 +205,7 @@ function (dojo, declare, easing) {
 						this.updatePossibleCards(args.args._private.possibleCards)
 					}
                 }
+
             }
 
             if (stateName == 'nextPlayer') {
@@ -246,7 +243,6 @@ function (dojo, declare, easing) {
         //       state. You can use this method to perform some user interface
         //       changes at this moment.
         onLeavingState: function (stateName) {
-            console.log( 'Leaving state: '+stateName );
 
             if (stateName === 'playerTurn' || stateName === 'playerTurn23' || 
                     stateName == 'discardCards') {
@@ -255,14 +251,12 @@ function (dojo, declare, easing) {
             if (stateName === 'nameScuse') {
                 dojo.query('.scusePanel').removeClass('scusePanel--visible')
             }
-
         },
 
         // onUpdateActionButtons: in this method you can manage "action buttons"
         //      that are displayed in the action status bar (ie: the HTML links 
         //      in the status bar).
         onUpdateActionButtons: function (stateName, args) {
-            console.log( 'onUpdateActionButtons: '+stateName );
 
             if (this.isCurrentPlayerActive()) {
 
@@ -303,6 +297,22 @@ function (dojo, declare, easing) {
                 if (log && args && !args.processed) {
                     args.processed = true;
 
+                    // if (args.seeResults !== undefined) {
+                    //     const theArgs = JSON.parse(JSON.stringify(args))
+                    //     setTimeout(() => {
+                    //         dojo.connect($('result_of_hand_' + theArgs.hand), 'onclick', this, (e) => {
+                    //             console.log(theArgs)
+                    //             e.preventDefault()
+                    //             dojo.publish('tableWindow', theArgs)
+                    //         })
+                    //     }, 0)
+                    //     args.seeResults = dojo.string
+                    //         .substitute('<a id="${linkId}">${seeResult}</a>', {
+                    //             linkId: 'result_of_hand_' + args.hand,
+                    //             seeResult: _('click for results')
+                    //         })
+                    // }
+
                     // List of declarations => single localized string
                     if (args.declarations !== undefined) {
                         args.declarations = this.toLocalizedDeclarationList(args.declarations)
@@ -319,13 +329,28 @@ function (dojo, declare, easing) {
                             if ((suit == 1 || suit == 3) && rank <= 10) {
                                 suitrank = 11 - rank
                             }
-                            name = (this.figures[rank]?.symbol || suitrank) + this.suits[suit].symbol
+                            name = ((this.figures[rank] && this.figures[rank].symbol) || suitrank) + this.suits[suit].symbol
                             colour = (suit == 1 || suit == 3) ? 'red' : 'black';
                         }
                         args.card_name = dojo.string.substitute('<strong style="color:${colour};">${name}</strong>', {
                             colour: colour,
                             name: name
                         });
+                    }
+
+                    if (args.display_suit !== undefined) {
+                        let display_suit = args.display_suit
+                        let name, colour, symbol
+                        if (display_suit > 4) {
+                            colour = 'blue';
+                            name = this.suits[display_suit].name
+                            symbol = ''
+                        } else {
+                            name = this.suits[display_suit].name
+                            symbol = this.suits[display_suit].symbol
+                            colour = (display_suit == 1 || display_suit == 3) ? 'red' : 'black';
+                        }
+                        args.display_suit = dojo.string.substitute('${name} <strong style="color:${colour};">${symbol}</strong>', { symbol, colour, name });
                     }
 
                 }
@@ -341,6 +366,12 @@ function (dojo, declare, easing) {
             if (declarations && declarations.length) {
                 message = declarations.map(d => {
                     const replacements = {}
+                    if (/\{card\}/.test(d.bonus_name)) {
+                        replacements.card = this.format_string_recursive(
+                            _('${card_name}'),
+                            { card: { type: d.bonus_arg, type_arg: d.bonus_arg2 }}
+                        )
+                    }
                     if (/\{num\}/.test(d.bonus_name)) {
                         replacements.num = d.bonus_arg
                     }
@@ -407,12 +438,15 @@ function (dojo, declare, easing) {
                     // Can play a card
                     const card_id = items[0].id;
                     this.makeAjaxCall(action, { id: card_id })
-                    this.playerHand.unselectAll();
                 }
             }
         },
 
         playCardOnTable : function(playerId, suit, value, card_id) {
+
+            const currentCards = dojo.query('.cardontable').length
+            dojo.style(this.getPlayerTableEl(playerId), 'z-index', currentCards + 1)
+
             // (nx, ny) : indices in sprite
             var nx = value - 1;
             var ny = suit - 1;
@@ -434,8 +468,8 @@ function (dojo, declare, easing) {
                     'player_id': playerId
                 }), target)
 
-            // player_id => direction
-            
+
+            // player_id => direction            
             if (playerId != this.player_id) {
                 // Some opponent played a card
                 // Move card from player panel
@@ -450,7 +484,7 @@ function (dojo, declare, easing) {
             }
 
             // In any case: move it to its final destination
-            this.createCardTooltip(`cardontable_${playerId}`, card_id);
+            this.createCardTooltip(`cardontable_${playerId}`, this.getCardUniqueId(suit, value));
             this.slideToObject(cardEl, target).play();
         },
 
@@ -461,16 +495,24 @@ function (dojo, declare, easing) {
 			// Update 'notempty' class
 			const cls = 'playerTables__tricksWon--notEmpty'
 			const method = tricksWon > 0 ? 'add' : 'remove'
-			this.getPlayerTableEl(playerId, 'tricksWon').classList[method](cls)
+            this.getPlayerTableEl(playerId, 'tricksWon').classList[method](cls)
+            this.addTooltipToClass(cls, _('Number of tricks taken'), '')            
         },
         
         updateHandCounter: function(current, total) {
             if (this.numberOfPlayers == 2) {
-                dojo.style('hand_count_wrap', 'display', 'none');
+                $('hand_count_wrap').innerHTML = '<strong>' +
+                        dojo.string.substitute( _('Hand ${n}'), { 
+                            n: current
+                        }) + '</strong><div>' +
+                        _('Game is to 100 points') + '<div>';
             } else {
                 $('hand_count_wrap').innerHTML = '<strong>' +
-                        dojo.string.substitute( _('Hand ${n} of ${t}'), { n: current, t: total } ) +
-                        '</strong>';
+                        dojo.string.substitute( _('Hand ${n} of ${t}'), { 
+                            n: Math.min(current, total),
+                            t: total
+                        }) +
+                        '</strong>'
             }
         },
 
@@ -539,10 +581,8 @@ function (dojo, declare, easing) {
         onButtonClickForDiscard: function(event) {
             if (this.checkAction('discard')) {
                 var cardsInHand = this.getCardsInHand()
-                console.log(cardsInHand)
                 var toDiscard = 3
                 var selected = this.getSelectedCards()
-                console.log('selected ', selected)
 
                 if (toDiscard != selected.length) {
                     var message = _('You must discard exactly 3')
@@ -579,21 +619,22 @@ function (dojo, declare, easing) {
             // Easy - change spritesheet. Tougher - realign.
             dojo.query('.' + current_style).addClass(new_style)
                 .removeClass(current_style)
+                
+            const newWidth = new_style_id !== 3 ? this.card_width :
+                this.tdm_card_width
+            const newHeight = new_style_id !== 3 ? this.card_height :
+                this.tdm_card_height
+            
             dojo.query('.cardontable').forEach(card => {
                 const oldWidth = this.current_style_id !== 3 ? this.card_width :
                     this.tdm_card_width
                 const oldHeight = this.current_style_id !== 3 ? this.card_height :
                     this.tdm_card_height
-                const newWidth = new_style_id !== 3 ? this.card_width :
-                    this.tdm_card_width
-                const newHeight = new_style_id !== 3 ? this.card_height :
-                    this.tdm_card_height
-                
                 const [_, oldX, xunit] = card.style.backgroundPositionX
                     .match(/^(-?\d+)(.*)$/)
                 const [__, oldY, yunit] = card.style.backgroundPositionY
                     .match(/^(-?\d+)(.*)$/)
-                const newX =( oldX / oldWidth) * newWidth + xunit
+                const newX = (oldX / oldWidth) * newWidth + xunit
                 const newY = (oldY / oldHeight) * newHeight + yunit
                 card.style.backgroundPositionX = newX
                 card.style.backgroundPositionY = newY
@@ -608,6 +649,8 @@ function (dojo, declare, easing) {
                 }
                 item.image = image;
             }
+            this.playerHand.item_width = newWidth
+            this.playerHand.item_height = newHeight
             
             // Change style of the current visible cards in the stocks
             image = `url(${image})`
@@ -661,7 +704,7 @@ function (dojo, declare, easing) {
                     }
                 }
                 value = suit < 5 ? Math.max(rank - 10, 0) : ([1,21].includes(rank) && 5 )
-                tooltipText = this.format_string_recursive(_('${name} of ${suitOf} (${card_name})'), { 
+                tooltipText = this.format_string_recursive(_('${name} ${suitOf} (${card_name})'), { 
                     name: rankName, 
                     suitOf: _(this.suits[suit].nameof), 
                     card: {
@@ -681,7 +724,7 @@ function (dojo, declare, easing) {
                     tooltipText += _('<br/>An <b>Ultimo Card.</b> Winning the last trick with this card earns a bonus; losing the last trick with this card earns a penalty. It is always in play.');
                 }
             }
-            this.addTooltipHtml(htmlId, tooltipText);
+            this.addTooltipHtml(htmlId, tooltipText)
         },
 
         ///////////////////////////////////////////////////
@@ -696,12 +739,11 @@ function (dojo, declare, easing) {
             "notifyPlayer" calls in your grosstarock.game.php file.
         */
         setupNotifications: function() {
-            console.log( 'notifications subscriptions setup' );
-
             dojo.subscribe('newDeal', this, 'notifyNewDeal')
             dojo.subscribe('newHand', this, 'notifyNewHand')
             dojo.subscribe('discard', this, 'notifyDiscard')
             dojo.subscribe('discarded', this, 'notifyDealerDiscard')
+            dojo.subscribe('discardedTrumps', this, 'notifyDiscardedTrumps')
             dojo.subscribe('declare', this, 'notifyDeclarations')
             this.notifqueue.setSynchronous('declare', 1000)
             dojo.subscribe('checkForAutomaticPlay', this,  "notifCheckForAutomaticPlay")
@@ -760,6 +802,14 @@ function (dojo, declare, easing) {
             this.setPreselectMode();
         },
 
+        notifyDiscardedTrumps: function (notif) {
+            const player = notif.args.player_id
+            setTimeout(() => {
+                this.showBubble(player, _('I discarded trumps'))
+                setTimeout(() => this.hideBubble(player), 500)
+            }, 50)
+        },
+
         notifyDeclarations: function (notif) {
             const player = notif.args.player_id
             const declarations = notif.args.declarations
@@ -776,8 +826,7 @@ function (dojo, declare, easing) {
 
         notifyNameSuit: function (notif) {
             const player = notif.args.playerId
-            const suit = notif.args.suit
-            this.showBubble(player, suit)
+            this.showBubble(player, this.format_string_recursive(_('I name ${display_suit}'), notif.args))
         },
 
         notifyRequireScuse: function (notif) {
@@ -832,13 +881,11 @@ function (dojo, declare, easing) {
         notifyGiveAllCardsToPlayer : function(notif) {
             // Move all cards on table to given table, then destroy them
             const winner_id = notif.args.player_id;
-
+            
             for ( let player_id in this.gamedatas.players) {
                 let b_winning_card = (winner_id == player_id);
-                console.log(b_winning_card, 11+b_winning_card);
                 // Ensure that the winning card stays on top
                 let cardEl = dojo.byId(`cardontable_${player_id}`)
-                dojo.style(cardEl, 'z-index', 11+b_winning_card); 
 
                 // Move all cards to winner - except, possibly, the fool.
                 let playerToId
@@ -850,12 +897,12 @@ function (dojo, declare, easing) {
                 }
                 const target = this.getPlayerTableEl(playerToId, 'avatar')
 
-                let anim = this.slideToObject(cardEl, target, 1000);
+                let anim = this.slideToObject(cardEl, target, 500);
 
                 if (b_winning_card || player_id == notif.args.fool_owner_id) {
                     self = this;
                     // 2. Delete it (1 second for the top card)
-                    dojo.connect(anim, 'onEnd', function(node) {self.fadeOutAndDestroy(cardEl, 1000)})
+                    dojo.connect(anim, 'onEnd', function(node) {self.fadeOutAndDestroy(cardEl, 500)})
                 } else {
                     // 2. Delete it (immediately for card under the top card)
                     dojo.connect(anim, 'onEnd', function(node) {dojo.destroy(cardEl)});
@@ -867,7 +914,6 @@ function (dojo, declare, easing) {
 
         notifyNewScores: function(notif) {
             // Update players' scores
-            console.log('new scores', notif)
             for (let player_id in notif.args.newScores) {
                 this.scoreCtrl[player_id].toValue(notif.args.newScores[player_id])
             }
@@ -880,7 +926,7 @@ function (dojo, declare, easing) {
         },
 
         notifyLog: function(notif) {
-            console.log(notif)
+            // console.log(notif)
         },
 
    });

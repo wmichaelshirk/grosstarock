@@ -37,11 +37,14 @@ class GrossTarock extends Table {
             "tricks_played" => 15,
             "scuse_required" => 16,
             "scuse_played" => 17,
-
+            
             // Pots values
             "pagat_pot" => 18,
             "king_pot" => 19,
             "score_pots" => 20,
+            
+            "trumps_discarded" => 21,
+
             // Options:
             "hands_to_play" => 100,
             "play_with_pots" => 101,
@@ -157,8 +160,21 @@ class GrossTarock extends Table {
         self::setGameStateInitialValue('eldest_player_id', $eldest_player_id);
         self::setGameStateInitialValue('players_declared', 0);
         self::setGameStateInitialValue('hands_played', 0);
+        self::setGameStateInitialValue('trumps_discarded', 0);
 
-
+       // Init game statistics
+		self::initStat('table', 'pagat_ultimo', 0);
+		self::initStat('table', 'king_ultimo', 0);
+		self::initStat('table', 'failed_ultimo', 0);
+		self::initStat('table', 'nill', 0);
+		self::initStat('table', 'slam', 0);
+		self::initStat('table', 'avg_declarations', 0);
+		self::initStat('player', 'ultimos_tried', 0);
+        self::initStat('player', 'won_ultimos', 0);
+        self::initStat('player', 'won_last_tricks', 0);
+		self::initStat('player', 'avg_declarations', 0);
+        self::initStat('player', 'avg_card_points', 0);
+        
         /************ End of the game initialization *****/
     }
 
@@ -281,6 +297,51 @@ class GrossTarock extends Table {
     private function doDeal () {
         $dealer_id = self::getGameStateValue( 'dealer_id' );
 
+        // // deal a ridonculous hand for testing:
+        // $trumps = $this->cards->getCardsOfType( 5 );
+        // $pagat = array_shift($trumps);
+        // $trumps = array_slice($trumps, 2);
+        // // give player one all the trumps, and all the kings.
+        // $kh = $this->cards->getCardsOfType(1,14);
+        // // $ks = $this->cards->getCardsOfType(2,14);
+        // $kd = $this->cards->getCardsOfType(3,14);
+        // $kc = $this->cards->getCardsOfType(4,14);
+        // $qc = $this->cards->getCardsOfType(4,13);
+        // $cc = $this->cards->getCardsOfType(4,12);
+        // $monster = array_map(function($c) { return $c['id']; },
+        //     array_merge([$pagat], $trumps, $kh, $kd, $kc, $qc, $cc));
+        
+        // $players = self::loadPlayersBasicInfos();
+        // $notDealer = 0;
+        // foreach ($players as $player_id => $player ) {
+        //     self::notifyAllPlayers("log", "$player_id", []);
+        //     if ($player_id != $dealer_id) {
+        //         $nonDealer = $player_id;
+        //         break;
+        //     }
+        // }
+        // $notDealerIds = array_filter(array_keys($players), function($id) use ($dealer_id) {
+        //     return $id != $dealer_id;
+        // });
+        // $notDealer = array_shift($notDealerIds);
+        // self::notifyAllPlayers("log", clienttranslate(' ${notDealer} Dealer:${dealer_id}, playerIds:${playerIds} '), [
+        //     'notDealer' => $notDealer,
+        //     'dealer_id' => $dealer_id,
+        //     'playerIds' => $notDealer
+        // ]);
+
+        // $this->cards->moveAllCardsInLocation( null, 'deck' );
+        // $this->cards->moveCards( $monster, 'hand', $notDealer);
+        // $this->cards->shuffle( 'deck' );
+
+        // foreach( $players as $player_id => $player ) {
+        //     if ($player_id == $notDealer) {
+        //         $this->cards->pickCards(1, 'deck', $player_id );
+        //     } else {
+        //         $this->cards->pickCards(25, 'deck', $player_id );
+        //     }
+        // }
+
         $players = self::loadPlayersBasicInfos();
         $this->cards->moveAllCardsInLocation( null, 'deck' );
         $this->cards->shuffle( 'deck' );
@@ -311,11 +372,13 @@ class GrossTarock extends Table {
                     $sql = "UPDATE player SET player_score = player_score - $contribution WHERE player_id='$player_id'";
                     self::DbQuery($sql);
                     self::incGameStateValue( 'pagat_pot', $contribution );
+                    $this->notifyPlayer($player_id, 'log', clienttranslate('You pay <b>${contribution}</b> to the empty Pagat Pot'), [ 'contribution' => $contribution ]);
                 }
                 if ($king_pot_value == 0) {
                     $sql = "UPDATE player SET player_score = player_score - $contribution WHERE player_id='$player_id'";
                     self::DbQuery($sql);
                     self::incGameStateValue( 'king_pot', $contribution );
+                    $this->notifyPlayer($player_id, 'log', clienttranslate('You pay <b>${contribution}</b> to the empty King Pot'), [ 'contribution' => $contribution ]);
                 }
             }
 
@@ -357,6 +420,7 @@ class GrossTarock extends Table {
             $values = implode(["'$bonus'", $dealer, 0, -$contributions], ',');
             self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value, bonus_pot_value) VALUES ($values)");
             
+            $this->notifyPlayer($dealer, 'log', clienttranslate('You pay <b>${contribution}</b> to each pot as Dealer'), [ 'contribution' => $contribution ]);
 
             self::incGameStateValue( 'pagat_pot', $contribution );
             self::incGameStateValue( 'king_pot', $contribution );
@@ -374,8 +438,8 @@ class GrossTarock extends Table {
         if (self::getGameStateValue('score_pots')) {
             $players = self::loadPlayersBasicInfos();
 
-            $pagatVal = floor($self::getGameStateValue('pagat_pot') / 3);
-            $kingVal = floor($self::getGameStateValue('king_val') / 3);
+            $pagatVal = floor(self::getGameStateValue('pagat_pot') / 3);
+            $kingVal = floor(self::getGameStateValue('king_pot') / 3);
             self::incGameStateValue('pagat_pot', $pagatVal * 3);
             self::incGameStateValue('king_pot', $kingVal * 3);
 
@@ -438,6 +502,7 @@ class GrossTarock extends Table {
             if (self::getGameStateValue('score_pots')) {
                 self::incGameStateValue($potName, $lostTarotValue);
                 $payoutMultiplier = 3;
+                $this->notifyPlayer($player, 'log', clienttranslate('You pay <b>${value}</b> to the pot'), [ 'value' => $lostTarotValue ]);
             }
 
             foreach ($players as $player_id => $unused) {
@@ -458,6 +523,7 @@ class GrossTarock extends Table {
                 'kingPot' => self::getGameStateValue('king_pot')
             ]);
         }
+        return $lostTarotValue;
     }
 
 
@@ -491,6 +557,7 @@ class GrossTarock extends Table {
                 'kingPot' => self::getGameStateValue('king_pot')
             ]);
         }
+        return $wonTarotValue;
     }
 
     private function payLastTrick ($player, $outcome, $kingPotValue) {
@@ -505,17 +572,21 @@ class GrossTarock extends Table {
         $highLastValue = 20;
         $lowLastValue = 5;
 
-        if (self::getPlayersNumber() == 3) {
-            // slam
-            if ($outcome == "slam") {
-                $valuePaid = $lowKingValue + $lowPagatValue;
-                $potBonus = 0;
-                if (self::getGameStateValue('score_pots')) {
-                    $valuePaid = $highKingValue + $highPagatValue;
-                    $potBonus = self::getGameStateValue('pagat_pot') + $kingPotValue;
-                    self::setGameStateValue('pagat_pot', 0);
-                    self::setGameStateValue('king_pot', 0);
-                }
+        $valuePaid = 0;
+
+
+        // slam
+        if ($outcome == "slam") {
+            $valuePaid = $lowKingValue + $lowPagatValue;
+            $potBonus = 0;
+            if (self::getGameStateValue('score_pots')) {
+                $valuePaid = $highKingValue + $highPagatValue;
+                $potBonus = self::getGameStateValue('pagat_pot') + $kingPotValue;
+                self::setGameStateValue('pagat_pot', 0);
+                self::setGameStateValue('king_pot', 0);
+                $this->notifyPlayer($player, 'log', clienttranslate('You receive <b>${potBonus}</b> from the pots!'), [ 'potBonus' => $potBonus ]);
+            }
+            if (self::getPlayersNumber() == 3) {
                 foreach ($players as $player_id => $unused) {
                     $adjustment = 0;
                     if ($player_id == $player) {
@@ -526,11 +597,16 @@ class GrossTarock extends Table {
                     $sql = "UPDATE player SET player_score = player_score + $adjustment WHERE player_id='$player_id'";
                     self::DbQuery($sql);
                 }
-                $bonusName = $this->bonuses['slam']['name'];
-                $values = implode(["'$bonusName'", $player, $valuePaid, $potBonus], ',');
-                self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value, bonus_pot_value) VALUES ($values) " );
             }
-            // null
+            $bonusName = $this->bonuses['slam']['name'];
+            $values = implode(["'$bonusName'", $player, $valuePaid, $potBonus], ',');
+            self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value, bonus_pot_value) VALUES ($values) " );
+
+            //stats
+            self::incStat(1, 'slam');
+        }
+        // null
+        if (self::getPlayersNumber() == 3) {
             if ($outcome == "null") {
                 $valuePaid = 25;
                 foreach ($players as $player_id => $unused) {
@@ -546,16 +622,22 @@ class GrossTarock extends Table {
                 $bonusName = $this->bonuses['nill']['name'];
                 $values = implode(["'$bonusName'", $player, $valuePaid], ',');
                 self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value) VALUES ($values) " );
+
+                //stats
+                self::incStat(1, 'nill');
             }
-            // pagat_won
-            if ($outcome == "pagat_won") {
-                $valuePaid = $lowPagatValue;
-                $potBonus = 0;
-                if (self::getGameStateValue('score_pots')) {
-                    $valuePaid = $highPagatValue;
-                    $potBonus = self::getGameStateValue('pagat_pot');
-                    self::setGameStateValue('pagat_pot', 0);
-                }
+        }
+        // pagat_won
+        if ($outcome == "pagat_won") {
+            $valuePaid = $lowPagatValue;
+            $potBonus = 0;
+            if (self::getGameStateValue('score_pots')) {
+                $valuePaid = $highPagatValue;
+                $potBonus = self::getGameStateValue('pagat_pot');
+                self::setGameStateValue('pagat_pot', 0);
+                $this->notifyPlayer($player, 'log', clienttranslate('You receive <b>${potBonus}</b> from the Pagat Pot!'), [ 'potBonus' => $potBonus ]);
+            }
+            if (self::getPlayersNumber() == 3) {
                 foreach ($players as $player_id => $unused) {
                     $adjustment = 0;
                     if ($player_id == $player) {
@@ -566,19 +648,27 @@ class GrossTarock extends Table {
                     $sql = "UPDATE player SET player_score = player_score + $adjustment WHERE player_id='$player_id'";
                     self::DbQuery($sql);
                 }
-                $bonusName = $this->bonuses['pagatultimo']['name'];
-                $values = implode(["'$bonusName'", $player, $valuePaid, $potBonus], ',');
-                self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value, bonus_pot_value) VALUES ($values) " );
             }
-            // pagat_lost
-            if ($outcome == "pagat_lost") {
-                $valuePaid = -$lowPagatValue;
-                $potBonus = 0;
-                if (self::getGameStateValue('score_pots')) {
-                    $valuePaid = -$highPagatValue;
-                    $potBonus = self::getGameStateValue('pagat_pot');
-                    self::incGameStateValue('pagat_pot', $potBonus);
-                }
+            $bonusName = $this->bonuses['pagatultimo']['name'];
+            $values = implode(["'$bonusName'", $player, $valuePaid, $potBonus], ',');
+            self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value, bonus_pot_value) VALUES ($values) " );
+
+            //stats
+            self::incStat(1, 'pagat_ultimo');
+            self::incStat(1, 'ultimos_tried', $player);
+            self::incStat(1, 'won_ultimos', $player);
+        }
+        // pagat_lost
+        if ($outcome == "pagat_lost") {
+            $valuePaid = -$lowPagatValue;
+            $potBonus = 0;
+            if (self::getGameStateValue('score_pots')) {
+                $valuePaid = -$highPagatValue;
+                $potBonus = self::getGameStateValue('pagat_pot');
+                self::incGameStateValue('pagat_pot', $potBonus);
+                $this->notifyPlayer($player, 'log', clienttranslate('You pay <b>${potBonus}</b> to the Pagat Pot!'), [ 'potBonus' => $potBonus ]);
+            }
+            if (self::getPlayersNumber() == 3) {
                 foreach ($players as $player_id => $unused) {
                     $adjustment = 0;
                     if ($player_id == $player) {
@@ -589,19 +679,26 @@ class GrossTarock extends Table {
                     $sql = "UPDATE player SET player_score = player_score + $adjustment WHERE player_id='$player_id'";
                     self::DbQuery($sql);
                 }
-                $bonusName = $this->bonuses['lostpagatultimo']['name'];
-                $values = implode(["'$bonusName'", $player, $valuePaid, -$potBonus], ',');
-                self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value, bonus_pot_value) VALUES ($values) " );
             }
-            // king_won
-            if ($outcome == "king_won") {
-                $valuePaid = $lowKingValue;
-                $potBonus = 0;
-                if (self::getGameStateValue('score_pots')) {
-                    $valuePaid = $highKingValue;
-                    $potBonus = $kingPotValue;
-                    self::incGameStateValue('king_pot', -$potBonus);
-                }
+            $bonusName = $this->bonuses['lostpagatultimo']['name'];
+            $values = implode(["'$bonusName'", $player, $valuePaid, -$potBonus], ',');
+            self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value, bonus_pot_value) VALUES ($values) " );
+
+            //stats
+            self::incStat(1, 'failed_ultimo');
+            self::incStat(1, 'ultimos_tried', $player);
+        }
+        // king_won
+        if ($outcome == "king_won") {
+            $valuePaid = $lowKingValue;
+            $potBonus = 0;
+            if (self::getGameStateValue('score_pots')) {
+                $valuePaid = $highKingValue;
+                $potBonus = $kingPotValue;
+                self::incGameStateValue('king_pot', -$potBonus);
+                $this->notifyPlayer($player, 'log', clienttranslate('You receive <b>${potBonus}</b> from the King Pot!'), [ 'potBonus' => $potBonus ]);
+            }
+            if (self::getPlayersNumber() == 3) {
                 foreach ($players as $player_id => $unused) {
                     $adjustment = 0;
                     if ($player_id == $player) {
@@ -612,19 +709,27 @@ class GrossTarock extends Table {
                     $sql = "UPDATE player SET player_score = player_score + $adjustment WHERE player_id='$player_id'";
                     self::DbQuery($sql);
                 }
-                $bonusName = $this->bonuses['kingultimo']['name'];
-                $values = implode(["'$bonusName'", $player, $valuePaid, $potBonus], ',');
-                self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value, bonus_pot_value) VALUES ($values) " );
             }
-            // king_lost
-            if ($outcome == "king_lost") {
-                $valuePaid = -$lowKingValue;
-                $potBonus = 0;
-                if (self::getGameStateValue('score_pots')) {
-                    $valuePaid = -$highKingValue;
-                    $potBonus = $kingPotValue;
-                    self::incGameStateValue('king_pot', $potBonus);
-                }
+            $bonusName = $this->bonuses['kingultimo']['name'];
+            $values = implode(["'$bonusName'", $player, $valuePaid, $potBonus], ',');
+            self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value, bonus_pot_value) VALUES ($values) " );
+
+            //stats
+            self::incStat(1, 'king_ultimo');
+            self::incStat(1, 'ultimos_tried', $player);
+            self::incStat(1, 'won_ultimos', $player);
+        }
+        // king_lost
+        if ($outcome == "king_lost") {
+            $valuePaid = -$lowKingValue;
+            $potBonus = 0;
+            if (self::getGameStateValue('score_pots')) {
+                $valuePaid = -$highKingValue;
+                $potBonus = $kingPotValue;
+                self::incGameStateValue('king_pot', $potBonus);
+                $this->notifyPlayer($player, 'log', clienttranslate('You pay <b>${potBonus}</b> to the King Pot!'), [ 'potBonus' => $potBonus ]);
+            }
+            if (self::getPlayersNumber() == 3) {
                 foreach ($players as $player_id => $unused) {
                     $adjustment = 0;
                     if ($player_id == $player) {
@@ -635,16 +740,22 @@ class GrossTarock extends Table {
                     $sql = "UPDATE player SET player_score = player_score + $adjustment WHERE player_id='$player_id'";
                     self::DbQuery($sql);
                 }
-                $bonusName = $this->bonuses['lostkingultimo']['name'];
-                $values = implode(["'$bonusName'", $player, $valuePaid, -$potBonus], ',');
-                self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value, bonus_pot_value) VALUES ($values) " );
             }
-            // last
-            if ($outcome == "last") {
-                $valuePaid = $lowLastValue;
-                if (self::getGameStateValue('score_pots')) {
-                    $valuePaid = $highLastValue;
-                }
+            $bonusName = $this->bonuses['lostkingultimo']['name'];
+            $values = implode(["'$bonusName'", $player, $valuePaid, -$potBonus], ',');
+            self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value, bonus_pot_value) VALUES ($values) " );
+
+            //stats
+            self::incStat(1, 'failed_ultimo');
+            self::incStat(1, 'ultimos_tried', $player);
+        }
+        // last
+        if ($outcome == "last") {
+            $valuePaid = $lowLastValue;
+            if (self::getGameStateValue('score_pots')) {
+                $valuePaid = $highLastValue;
+            }
+            if (self::getPlayersNumber() == 3) {
                 foreach ($players as $player_id => $unused) {
                     $adjustment = 0;
                     if ($player_id == $player) {
@@ -655,12 +766,17 @@ class GrossTarock extends Table {
                     $sql = "UPDATE player SET player_score = player_score + $adjustment WHERE player_id='$player_id'";
                     self::DbQuery($sql);
                 }
-
-                $bonusName = $this->bonuses['lasttrick']['name'];
-                $values = implode(["'$bonusName'", $player, $valuePaid], ',');
-                self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value) VALUES ($values) " );
             }
+            $bonusName = $this->bonuses['lasttrick']['name'];
+            $values = implode(["'$bonusName'", $player, $valuePaid], ',');
+            self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_value) VALUES ($values) " );
+
+            //stats
+            self::incStat(1, 'last_trick');
         }
+
+
+        return $valuePaid;
     }
 
     private function cardsInHand( $playerId ) {
@@ -725,12 +841,12 @@ class GrossTarock extends Table {
             $curMat = 20;
 
             $meldedCards = array_merge($meldedCards, $matadors);
+            $trumpvals = array_column($trumps, 'type_arg');
 
-            $trumpvals = array_column($playerHand, 'type_arg');
-            while (in_array($curMat, $trumpvals)) {
+            while (in_array($curMat, $trumpvals) && $curMat > 1) {
                 $meldedCards[] = $curMat;
-                $curMat -= 1;
                 $matadorCount += 1;
+                $curMat -= 1;
             }
             $matadors_declaration = $declaration = [
                 'bonus_name' => $this->bonuses['matadors']['name'],
@@ -903,10 +1019,13 @@ class GrossTarock extends Table {
         // get trump + king count: if it's > 23? 22? They'll have to discard one..
         $noTrumps = $noHonours;
         if ($trumpCount > 3 ||
-            count(array_diff([1, 21, 22], array_column($trumps, 'type_arg')) > 0)) {
+            count(array_diff([1, 21, 22], array_column($trumps, 'type_arg'))) > 0) {
             $noTrumps = array_filter($noHonours, function($c) {
                 return $c['type'] != 5;
             });
+        }
+        if (count($noTrumps) < 3) {
+            $noTrumps = $noHonours;
         }
 
         $noMelds = array_filter($noTrumps, function($c) use ($meldedCards) {
@@ -995,6 +1114,23 @@ class GrossTarock extends Table {
             self::setGameStateValue('suit_led', $currentCard['type']);
         }
 
+        $dealer = self::getGameStateValue('dealer_id');
+        $trumpsDiscarded = self::getGameStateValue('trumps_discarded');
+        $cardsPlayed = $this->cards->countCardInLocation('cardsontable');
+        // If: 1) not lead and 2) you don't follow suit but 3) don't trump and 
+        // 4) are dealer and 5) discarded trumps: Announce as much.
+        if ($dealer == $playerId && $cardsPlayed > 1 && 
+                ($currentSuitLed != $currentCard['type'] || $currentSuitLed != 5) &&
+                $currentCard['type'] != 5 && $trumpsDiscarded > 0)  {
+            self::setGameStateValue('trumps_discarded', 0);
+            self::notifyAllPlayers('discardedTrumps',
+                clienttranslate('${player_name} discarded trumps'), [
+                    'player_name' => self::getActivePlayerName(),
+                    'player_id' => $playerId
+                ]
+            );
+        }
+
         // And notify
         self::notifyAllPlayers('playCard',
             clienttranslate('${player_name} plays ${card_name}'), [
@@ -1067,7 +1203,7 @@ class GrossTarock extends Table {
                 $hand_after_discard = $this->cards->getCards($hand_ids_after_discard);
                 $number_of_trumps_left = count(array_filter($hand_after_discard,
                     function($c) {
-                        return $c['type'] == 5 && $c['type_arg'] < 22;
+                        return $c['type'] == 5 && $c['type_arg'] <= 22;
                     }));
                 $numberOfKingsLeft = count(array_filter($hand_after_discard,
                     function($c) {
@@ -1075,17 +1211,18 @@ class GrossTarock extends Table {
                     }
                 ));
                 $trumpsAndKings = $number_of_trumps_left + $numberOfKingsLeft;
-                if ($number_of_trumps_left > 0 && trumpsAndKings < 25) {
+                if ($number_of_trumps_left > 0 && $trumpsAndKings < 25) {
                     throw new BgaUserException( self::_('You cannot discard trumps unless you thereby become void in trumps' ));
                 }
+                self::incGameStateValue('trumps_discarded', 1);
             }
             // only discard a meld card if necessary
             if (in_array($card['id'], array_column($meldedCards, 'id'))) {
                 $hand_ids_after_discard = array_diff($cardIds, $cards);
                 $hand_after_discard = $this->cards->getCards($hand_ids_after_discard);
                 $numberOfNonMeldsLeft = count(array_filter($hand_after_discard,
-                    function($c) {
-                        return $c['type'] != 5 && !in_array($card['id'], array_column($meldedCards, 'id'));
+                    function($c) use ($meldedCards) {
+                        return $c['type'] != 5 && !in_array($c['id'], array_column($meldedCards, 'id'));
                     }
                 ));
                 if ($numberOfNonMeldsLeft > 0) {
@@ -1096,8 +1233,9 @@ class GrossTarock extends Table {
             }
         }
         foreach ($cardsToAnnounce as $card) {
-            $values = implode(["'discard'", $playerId, $card['id']], ',');
-            self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_arg) VALUES ($values) " );
+            $bonus = $this->bonuses['discarded']['name'];
+            $values = implode(["'$bonus'", $playerId, $card['type'], $card['type_arg']], ',');
+            self::DbQuery( "INSERT INTO bonuses (bonus_name, bonus_player, bonus_arg, bonus_arg2) VALUES ($values) " );
         }
 
 
@@ -1115,22 +1253,24 @@ class GrossTarock extends Table {
 
     function nameScuse($suit) {
         self::checkAction('nameScuse');
+
         $playerId = self::getCurrentPlayerId();
         $suits = $this->getPossibleSuitsToName($playerId);
         if (!in_array($suit, $suits)) {
             throw new BgaUserException( self::_('You must name a suit that remains in the other players’ hands' ));
         }
         self::setGameStateValue('suit_led', $suit);
-        self::notifyAllPlayers( 'nameSuit', clienttranslate('${name} names ${suit}'), [
+        self::notifyAllPlayers( 'nameSuit', clienttranslate('${name} names ${display_suit}'), [
             'name' => self::getPlayerName($playerId),
             'playerId' => $playerId,
-            'suit' => $this->suits[$suit]['symbol']
+            'display_suit' => $suit
         ]);
         $this->gamestate->nextState();
     }
 
     function requireScuse() {
         self::checkAction('requireScuse');
+
         $playerId = self::getCurrentPlayerId();
 
         if (self::getGameStateValue('scuse_played') == 1) {
@@ -1235,13 +1375,13 @@ class GrossTarock extends Table {
         $currentHand = self::getGameStateValue( 'hands_played' ) + 1;
         $handsToPlay = self::getGameStateValue( 'hands_to_play' );
         $dealer = self::getGameStateValue( 'dealer_id' );
-        self::notifyAllPlayers( 'newDeal', clienttranslate('<hr/>${player_name} deals a new hand<hr/>'), array(
+        self::notifyAllPlayers( 'newDeal', clienttranslate('<hr/>${player_name} deals a new hand<hr/>'), [
             'dealer_id' => $dealer,
             'player_name' => self::getPlayerName($dealer),
             'current_hand' => $currentHand,
             'hands_to_play' => $handsToPlay,
             'eldest' => $eldest
-        ) );
+        ]);
 
         self::DbQuery( 'DELETE FROM bonuses' );
 
@@ -1283,9 +1423,10 @@ class GrossTarock extends Table {
 
         self::DbQuery("DELETE FROM bonuses WHERE bonus_player=$playerId AND bonus_pot_value=0");
         if (count($saveBonuses) > count($declarations)) {
-            $declarations = $saveBonuses;
+            $declarations = array_values($saveBonuses);
         }
 
+        $total = 0;
         foreach ($declarations as $key => $declaration) {
             $name = $declaration['bonus_name'] ?? NULL;
             $arg = $declaration['bonus_arg'] ?? NULL;
@@ -1296,35 +1437,56 @@ class GrossTarock extends Table {
                     $name == $this->bonuses['trumpswithout']['name'] ) {
                 $trumpscore = 10 + (($arg - 10) * 5);
                 $this->payDeclaration ($playerId, $name, $trumpscore, $arg);
+                $total += $trumpscore;
             }
             // matadors
             if ($name == $this->bonuses['matadors']['name']) {
                 $matadorscore = 10 + (($arg - 3) * 5);
                 $this->payDeclaration ($playerId, $name, $matadorscore, $arg);
+                $total += $matadorscore;
             }
             // cavalries & kings
             if ($name == $this->bonuses['halfcavalry']['name'] ||
                     $name == $this->bonuses['halfkings']['name'] ) {
                 $halfscore = 5;
                 $this->payDeclaration ($playerId, $name, $halfscore, $arg, $arg2);
+                $total += $halfscore;
             }
             if ($name == $this->bonuses['fullcavalry']['name'] ||
                     $name == $this->bonuses['fullkings']['name'] ) {
                 $fullscore = 10;
                 $this->payDeclaration ($playerId, $name, $fullscore, $arg);
+                $total += $fullscore;
             }
             if ($name == $this->bonuses['abundantcavalry']['name'] ||
                     $name == $this->bonuses['abundantkings']['name'] ) {
                 $abundantscore = 15;
                 $this->payDeclaration ($playerId, $name, $abundantscore, $arg);
+                $total += $abundantscore;
             }
         }
 
-        self::notifyAllPlayers( 'declare', clienttranslate('${player_name} declares "${declarations}"'), [
-            'player_name' => self::getPlayerName($playerId),
-            'player_id' => $playerId,
-            'declarations' => $declarations
-        ]);
+        // Stats
+        $handsPlayed = self::getGameStateValue('hands_played') + 1;
+        $old = self::getStat('avg_declarations', $playerId) * $handsPlayed;
+        $new = ($old + $total) / $handsPlayed;
+        self::setStat($new, 'avg_declarations', $playerId);
+
+        if ($total) {
+            self::notifyAllPlayers('declare', clienttranslate('${player_name} declares "${declarations}", worth <b>${value}</b>'), [
+                'player_name' => self::getPlayerName($playerId),
+                'player_id' => $playerId,
+                'declarations' => $declarations,
+                'value' => $total
+            ]);
+        } else {
+            self::notifyAllPlayers('declare', clienttranslate('${player_name} passes'), [
+                'player_name' => self::getPlayerName($playerId),
+                'player_id' => $playerId,
+                'declarations' => $declarations,
+                'value' => $total
+            ]);
+        }
 
         $newScores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true);
         self::notifyAllPlayers("newScores", '', [
@@ -1502,22 +1664,28 @@ class GrossTarock extends Table {
                     $card_player_id = $card['location_arg'];
                     if (self::isPagat($card)) {
                         if ($card_player_id == $best_value_player_id) {
-                            $this->payTarotWon($card_player_id, 'pagat');
+                            $value = $this->payTarotWon($card_player_id, 'pagat');
                             self::notifyAllPlayers('log',
-                                clienttranslate('${player_name} saved the Pagat'),
-                                ['player_name' => self::getPlayerName($best_value_player_id)]);
+                                clienttranslate('${player_name} saved the Pagat, worth <b>${value}</b>'), [
+                                    'player_name' => self::getPlayerName($best_value_player_id),
+                                    'value' => $value
+                                ]);
                         } else {
-                            $this->payTarotLost($card_player_id, 'pagat');
+                            $value = $this->payTarotLost($card_player_id, 'pagat');
                             self::notifyAllPlayers('log',
-                                clienttranslate('${player_name} lost the Pagat'),
-                                ['player_name' => self::getPlayerName($card_player_id)]);
+                                clienttranslate('${player_name} loses the Pagat, worth <b>${value}</b>'), [
+                                    'player_name' => self::getPlayerName($card_player_id),
+                                    'value' => $value
+                                ]);
                         }
                     }
                     if (self::isKing($card) && $card_player_id != $best_value_player_id) {
-                        $this->payTarotLost($card_player_id, 'king');
+                        $value = $this->payTarotLost($card_player_id, 'king');
                         self::notifyAllPlayers('log',
-                            clienttranslate('${player_name} lost a King'),
-                            ['player_name' => self::getPlayerName($card_player_id)]);
+                            clienttranslate('${player_name} loses a King, worth <b>${value}</b>'), [
+                                'player_name' => self::getPlayerName($card_player_id),
+                                'value' => $value
+                            ]);
                     }
                 }
             } else {
@@ -1551,17 +1719,21 @@ class GrossTarock extends Table {
                              !$slam && !$null ) {
                             // Add saved-the-pagat bonus
                             $ultimo_or_bagud = true;
+                            $valuePaid = $this->payLastTrick ($card_player_id, 'pagat_won', 0);
                             self::notifyAllPlayers('log',
-                                clienttranslate('${player_name} won a Pagat Ultimo!'),
-                                ['player_name' => self::getPlayerName($best_value_player_id)]);
-                            $this->payLastTrick ($card_player_id, 'pagat_won', 0);
+                                clienttranslate('${player_name} wins a Pagat Ultimo, worth <b>${value}</b>!'), [
+                                    'player_name' => self::getPlayerName($best_value_player_id),
+                                    'value' => $valuePaid
+                                ]);
                         } else {
                             // add lost-the-pagat bonus
                             $ultimo_or_bagud = true;
-                            self::notifyAllPlayers( 'log',
-                                clienttranslate('${player_name} lost a Pagat Ultimo!'),
-                                ['player_name' => self::getPlayerName($card_player_id)]);
-                            $this->payLastTrick ($card_player_id, 'pagat_lost', 0);
+                            $valuePaid = $this->payLastTrick ($card_player_id, 'pagat_lost', 0);
+                            self::notifyAllPlayers('log',
+                                clienttranslate('${player_name} loses a Pagat Ultimo, worth <b>${value}</b>!'), [
+                                    'player_name' => self::getPlayerName($card_player_id),
+                                    'value' => $valuePaid
+                            ]);
                         }
                     }
                     if (self::isKing($card)) {
@@ -1569,36 +1741,50 @@ class GrossTarock extends Table {
                                 !$slam && !$null) {
                             // add King Ultimo bonus
                             $ultimo_or_bagud = true;
-                            self::notifyAllPlayers( 'log', clienttranslate('${player_name} won a King Ultimo!'),
-                            ['player_name' => self::getPlayerName($card_player_id)]);
+                            $valuePaid = $this->payLastTrick($card_player_id, 'king_won', $king_pot_value);
+                            self::notifyAllPlayers('log', clienttranslate('${player_name} wins a King Ultimo, worth <b>${value}</b>!'), [
+                                'player_name' => self::getPlayerName($card_player_id),
+                                'value' => $valuePaid
+                            ]);
 
-                            $this->payLastTrick ($card_player_id, 'king_won', $king_pot_value);
                         } else if ($card_player_id != $best_value_player_id) {
                             // add lost-the-king bonus
                             $ultimo_or_bagud = true;
-                            self::notifyAllPlayers( 'log', clienttranslate('${player_name} lost a King Ultimo!'),
-                            ['player_name' => self::getPlayerName($card_player_id)]);
-                            $this->payLastTrick ($card_player_id, 'king_lost', $king_pot_value);
+                            $valuePaid = $this->payLastTrick ($card_player_id, 'king_lost', $king_pot_value);
+                            self::notifyAllPlayers('log', clienttranslate('${player_name} loses a King Ultimo, worth <b>${value}</b>!'), [
+                                'player_name' => self::getPlayerName($card_player_id),
+                                'value' => -$valuePaid
+                            ]);
                         }
                     }
                 }
                 if (!$ultimo_or_bagud && !$slam && !$null) {
                     // add last trick bonus
                     $ultimo_or_bagud = true;
-                    self::notifyAllPlayers( 'log', clienttranslate('${player_name} won the last trick!'),
-                    ['player_name' => self::getPlayerName($best_value_player_id)]);
-                    $this->payLastTrick ($best_value_player_id, 'last', 0);
+                    $valuePaid = $this->payLastTrick ($best_value_player_id, 'last', 0);
+                    self::notifyAllPlayers( 'log', clienttranslate('${player_name} wins the last trick, worth <b>${value}</b>!'), [
+                        'player_name' => self::getPlayerName($best_value_player_id),
+                        'value' => $valuePaid
+                    ]);
                 }
 
                 if ($slam) {
-                   self::notifyAllPlayers( 'log', clienttranslate('${player_name} won a <i>Tout<i>!'),
-                    ['player_name' => self::getPlayerName($best_value_player_id)]);
-                    $this->payLastTrick ($card_player_id, 'slam', 0);
+                    $valuePaid = $this->payLastTrick ($card_player_id, 'slam', 0);
+                    self::notifyAllPlayers( 'log', clienttranslate('${player_name} wins a <i>Tout<i>, worth <b>${value}</b>!'), [
+                       'player_name' => self::getPlayerName($best_value_player_id),
+                       'value' => $valuePaid
+                    ]);
                 }
                 if ($null) {
-                    self::notifyAllPlayers( 'log', clienttranslate('${name} won a <i>Misère</i>!'),
-                    ['name' => self::getPlayerName($null)]);
-                    $this->payLastTrick ($null, 'null', 0);
+                    $valuePaid = $this->payLastTrick ($null, 'null', 0);
+                    self::notifyAllPlayers( 'log', clienttranslate('${name} wins a <i>Misère</i>, worth <b>${value}</b>!'), [
+                        'name' => self::getPlayerName($null),
+                        'value' => $valuePaid
+                    ]);
+                }
+
+                if (!$null) {
+                    self::incStat(1,'won_last_tricks', $best_value_player_id);
                 }
             }
 
@@ -1725,7 +1911,7 @@ class GrossTarock extends Table {
 
         // Apply scores to players
         if ($players_number == 3 && !$null_won) {
-            // The rest has already been payed. Card points only.
+            // The rest has already been paid. Card points only.
             foreach ($card_points as $player_id => $points) {
                 $score = round(($points - 26) / 5) * 5;
                 $sql = "UPDATE player SET player_score = player_score + $score WHERE player_id='$player_id'";
@@ -1745,6 +1931,17 @@ class GrossTarock extends Table {
         $handsToPlay = self::getGameStateValue('hands_to_play');
         $handsPlayed = self::incGameStateValue( 'hands_played', 1 );
         self::logScores();
+
+        // update stats
+        $declarations = 0;
+        foreach ($card_points as $player_id => $points) {
+            $old = self::getStat('avg_card_points', $player_id) * ($handsPlayed - 1);
+            $new = ($old + $points) / $handsPlayed;
+            self::setStat($new, 'avg_card_points', $player_id);
+            $declarations += self::getStat('avg_declarations', $player_id);
+        }
+        self::setStat($declarations / 3, 'avg_declarations');
+
 
 
         $newScores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true);
@@ -1779,6 +1976,7 @@ class GrossTarock extends Table {
         self::setGameStateValue('eldest_player_id', $eldest_player_id);
         self::setGameStateValue('players_declared', 0);
         self::setGameStateValue('tricks_played', 0);
+        self::setGameStateValue('trumps_discarded', 0);
         $this->gamestate->nextState("nextHand");
     }
 
@@ -1841,7 +2039,7 @@ class GrossTarock extends Table {
         $bonuses = self::getCollectionFromDB( 'SELECT * FROM bonuses ORDER BY bonus_id' );
         foreach ($bonuses as $bonus) {
             $bonus_name = $bonus['bonus_name'];
-            if ($bonus_name == 'discard') continue;
+            if ($bonus_name == $this->bonuses['discarded']['name']) continue;
             $bonus_player_id = $bonus['bonus_player'];
             $bonus_value = $bonus['bonus_value'];
             $pot_value = $bonus['bonus_pot_value'];
@@ -1922,16 +2120,16 @@ class GrossTarock extends Table {
         // Add the card points:
         // No card points in a null.
         $row = [[
-            'str' => 'Card Points',
-            'args' => [],
+            'str' => '${points}',
+            'args' => [ 'points' => $this->bonuses['points']['name'] ],
         ]];
         foreach ($players_to_points as $player_id => $points) {
             if ($players_number == 3 && !$nullAchieved) {
                 $roundedPoints = round(($points - 26) / 5) * 5;
-                $players_to_scores[$player_id] [] = [ "Card Points", $roundedPoints ];
+                $players_to_scores[$player_id] [] = [ $this->bonuses['points']['name'], $roundedPoints ];
                 $row[] = "(<em>$points</em>) $roundedPoints";
             } else if ($players_number == 2) {
-                $players_to_scores[$player_id] [] = [ "Card Points", $points ];
+                $players_to_scores[$player_id] [] = [ $this->bonuses['points']['name'], $points ];
                 $row[] = "$points";
             }
         }
@@ -1998,11 +2196,22 @@ class GrossTarock extends Table {
 					$this->playCard($playerCard['id']);
                     return;
 
+                case 'discardCards':
+                    // Discard the first 3 cards permitted.
+                    $cards = $this->getPossibleCardsToDiscard($activePlayer);
+                    $this->discard(array_slice(array_column($cards, 'id'), 0, 3));
+                    return;
+
                 case 'nameScuse':
                     // Loop the player hand, stopping at the first card which can be played
                     $suits = $this->getPossibleSuitsToName($activePlayer);
                     $this->nameScuse($suits[0]);
                     return;
+
+                case 'playerTurn23':
+                    $this->requireScuse();
+                    return;
+
 			}
 		}
 

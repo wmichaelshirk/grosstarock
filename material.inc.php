@@ -23,36 +23,36 @@
 
 
 $this->suits = [
-  1 => ['name' => clienttranslate('Heart'),
-              'nameof' => clienttranslate('Hearts'),
+  1 => ['name' => clienttranslate('Hearts'),
+              'nameof' => clienttranslate('of Hearts'),
               'insuit' => clienttranslate('in Hearts'),
               'withoutsuit' => clienttranslate('the Heart'),
               'nametr' => self::_('Heart'),
               'symbol' => '&hearts;'],
               
-  2 => array( 'name' => clienttranslate('Club'),
-              'nameof' => clienttranslate('Clubs'),
+  2 => array( 'name' => clienttranslate('Clubs'),
+              'nameof' => clienttranslate('of Clubs'),
               'insuit' => clienttranslate('in Clubs'),
               'withoutsuit' => clienttranslate('the Club'),
               'nametr' => self::_('Club'),
               'symbol' => '&clubs;'),
               
-  3 => array( 'name' => clienttranslate('Diamond'),
-              'nameof' => clienttranslate('Diamonds'),
+  3 => array( 'name' => clienttranslate('Diamonds'),
+              'nameof' => clienttranslate('of Diamonds'),
               'insuit' => clienttranslate('in Diamonds'),
               'withoutsuit' => clienttranslate('the Diamond'),
               'nametr' => self::_('Diamond'),
               'symbol' => '&diams;'),
               
-  4 => array( 'name' => clienttranslate('Spade'),
-              'nameof' => clienttranslate('Spades'),
+  4 => array( 'name' => clienttranslate('Spades'),
+              'nameof' => clienttranslate('of Spades'),
               'insuit' => clienttranslate('in Spades'),
               'withoutsuit' => clienttranslate('the Spade'),
               'nametr' => self::_('Spade'),
               'symbol' => '&spades;'),
               
-  5 => array( 'name' => clienttranslate('Trump'),
-              'nameof' => clienttranslate('Trumps'),
+  5 => array( 'name' => clienttranslate('Trumps'),
+              'nameof' => clienttranslate('of Trumps'),
               'insuit' => clienttranslate('in Trumps'),
               'nametr' => self::_('Trump'),
               'symbol' => 'T'),
@@ -131,7 +131,9 @@ $this->bonuses = [
   'dealing' => [
     'name' => clienttranslate('Dealing')
   ],
-
+  'discarded' => [
+    'name' => clienttranslate('discarded ${card}')
+  ],
   // declarations
   'trumpswith' => [
     'name' => clienttranslate('${num} Trumps <i>avec</i>')
@@ -215,7 +217,7 @@ $this->bonuses = [
   ],
 
   'points' => [
-    'name' => clienttranslate('Points')
+    'name' => clienttranslate('Card Points')
     // German: Augen
   ]
 
