@@ -438,12 +438,26 @@ class GrossTarock extends Table {
         if (self::getGameStateValue('score_pots')) {
             $players = self::loadPlayersBasicInfos();
 
-            $pagatVal = floor(self::getGameStateValue('pagat_pot') / 3);
-            $kingVal = floor(self::getGameStateValue('king_pot') / 3);
-            self::incGameStateValue('pagat_pot', $pagatVal * 3);
-            self::incGameStateValue('king_pot', $kingVal * 3);
+            self::notifyAllPlayers('endGamePotPayments', 
+                clienttranslate('The Pagat Pot contained ${pagatVal}, and the King Pot contained ${kingVal}'), [
+                    'pagatVal' => self::getGameStateValue('pagat_pot'),
+                    'kingVal' => self::getGameStateValue('king_pot')
+                ]);
+
+            $pagatVal = floor(self::getGameStateValue('pagat_pot') / 15);
+            $kingVal = floor(self::getGameStateValue('king_pot') / 15);
+            self::incGameStateValue('pagat_pot', -($pagatVal * 15));
+            self::incGameStateValue('king_pot', -($kingVal * 15));
+            $pagatVal *= 5;
+            $kingVal *= 5;
 
             $total = $pagatVal + $kingVal;
+            self::notifyAllPlayers('endGamePotPayments', 
+                clienttranslate('Everyone receives <b>${pagatVal}</b> from the Pagat Pot, and <b>${kingVal}</b> from the King Pot: ${total}'), [
+                    'pagatVal' => $pagatVal,
+                    'kingVal' => $kingVal,
+                    'total' => $total
+                ]);
 
             foreach ($players as $player_id => $player) {
                 $sql = "UPDATE player SET player_score = player_score + $total WHERE player_id='$player_id'";
@@ -1907,13 +1921,13 @@ class GrossTarock extends Table {
         $scoring_features = $calculated_score["scoring_features"];
         $point_totals = $calculated_score["point_totals"];
         $card_points = $calculated_score["card_points"];
+        $rounded_points = $calculated_score['rounded_points'];
         $null_won = $calculated_score["null_won"];
 
         // Apply scores to players
         if ($players_number == 3 && !$null_won) {
             // The rest has already been paid. Card points only.
-            foreach ($card_points as $player_id => $points) {
-                $score = round(($points - 26) / 5) * 5;
+            foreach ($rounded_points as $player_id => $score) {
                 $sql = "UPDATE player SET player_score = player_score + $score WHERE player_id='$player_id'";
                 self::DbQuery($sql);
             }
@@ -1945,7 +1959,17 @@ class GrossTarock extends Table {
 
 
         $newScores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true);
-        self::notifyAllPlayers("newScores", '', array('newScores' => $newScores));
+        $pagatPot = 0;
+        $kingPot = 0;
+        if (self::getGameStateValue('score_pots')) {
+            $pagatPot = self::getGameStateValue('pagat_pot');
+            $kingPot = self::getGameStateValue('king_pot');
+        }
+        self::notifyAllPlayers("newScores", '', [
+            'newScores' => $newScores,
+            'pagatPot' => $pagatPot,
+            'kingPot' => $kingPot
+        ]);
 
 
         // Is the game over?
@@ -1953,6 +1977,7 @@ class GrossTarock extends Table {
             if ($handsPlayed == $handsToPlay) {
                 $this->emptyPots();
                 $this->gamestate->nextState("endGame");
+                return;
             }
         } else {
             foreach ($newScores as $player_id => $score) {
@@ -1990,8 +2015,14 @@ class GrossTarock extends Table {
         $calculated_score = self::calculateScore();
         $scoring_features = $calculated_score["scoring_features"];
         $point_totals = $calculated_score["point_totals"];
+        $card_points = $calculated_score['card_points'];
         $nullAchieved = $calculated_score["null_won"];
 
+        $this->notifyAllPlayers('log', '', [
+            'scoring_features' => $scoring_features,
+            'point_totals' => $point_totals,
+            'card_points' => $card_points
+        ]);
 
         $footer = $nullAchieved ? clienttranslate("Successful Ultimos and Card Points are not scored in a Misère") : "";
         $this->notifyAllPlayers( "tableWindow", '', [
@@ -2119,21 +2150,52 @@ class GrossTarock extends Table {
         // In 2 player, the winner scores the difference between their scores.
         // Add the card points:
         // No card points in a null.
-        $row = [[
-            'str' => '${points}',
-            'args' => [ 'points' => $this->bonuses['points']['name'] ],
-        ]];
-        foreach ($players_to_points as $player_id => $points) {
-            if ($players_number == 3 && !$nullAchieved) {
-                $roundedPoints = round(($points - 26) / 5) * 5;
-                $players_to_scores[$player_id] [] = [ $this->bonuses['points']['name'], $roundedPoints ];
-                $row[] = "(<em>$points</em>) $roundedPoints";
-            } else if ($players_number == 2) {
-                $players_to_scores[$player_id] [] = [ $this->bonuses['points']['name'], $points ];
-                $row[] = "$points";
+        // N.B. The new dealer's cards are not counted, but summed from the others
+        //   due to the effects of the rounding.
+        $player_to_rounded_points = [];
+        // card points row.
+        if (!$nullAchieved) {
+            $row = [[
+                'str' => '${points}',
+                'args' => [ 'points' => $this->bonuses['points']['name'] ],
+            ]];
+
+            // two player is easy.
+            if ($players_number == 2) {
+                foreach ($players_to_points as $player_id => $points) {
+                    $players_to_scores[$player_id] [] = [ $this->bonuses['points']['name'], $points ];
+                    $row[] = "$points";
+                }
+            } else {
+                // Three is a little more involved.
+                $oldDealer = self::getGameStateValue('dealer_id');
+                $newDealer = self::getPlayerAfter($oldDealer);
+                $dealerRounded = 0;
+
+                // figure the rounded points
+                foreach ($players_to_points as $player_id => $points) {
+                    if ($player_id != $newDealer) {
+                        $roundedPoints = round(($points - 26) / 5) * 5;
+                        $dealerRounded += $roundedPoints;
+                        $players_to_scores[$player_id] [] = [ $this->bonuses['points']['name'], $roundedPoints ];
+                    } 
+                }
+                // now add new dealers points
+                $dealerRounded = -$dealerRounded;
+                $players_to_scores[$newDealer] [] = [ $this->bonuses['points']['name'], $dealerRounded ];
+
+                // now build the row, and save the rounded points.
+                foreach ($players_to_points as $player_id => $points) {
+                    if ($player_id == $newDealer) {
+                        $row[] = "(<em>$points</em>) $dealerRounded";
+                        $player_to_rounded_points[$player_id] = $dealerRounded;
+                    } else if ($players_number == 3 && !$nullAchieved && $player_id != $newDealer) {
+                        $roundedPoints = round(($points - 26) / 5) * 5;
+                        $player_to_rounded_points[$player_id] = $roundedPoints;
+                        $row[] = "(<em>$points</em>) $roundedPoints";
+                    }
+                }
             }
-        }
-        if ($players_number == 2 || !$nullAchieved) {
             $table[] = $row;
         }
 
@@ -2149,6 +2211,7 @@ class GrossTarock extends Table {
             "scoring_features" =>  $players_to_scores,
             "point_totals" => $players_to_score_totals,
             "card_points" => $players_to_points,
+            "rounded_points" => $player_to_rounded_points,
             "null_won" => $nullAchieved,
             "table" => $table
         ];

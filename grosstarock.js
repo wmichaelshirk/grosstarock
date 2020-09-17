@@ -914,15 +914,20 @@ function (dojo, declare, easing) {
 
         notifyNewScores: function(notif) {
             // Update players' scores
+            let total = 0
             for (let player_id in notif.args.newScores) {
                 this.scoreCtrl[player_id].toValue(notif.args.newScores[player_id])
+                total += Number(notif.args.newScores[player_id])
             }
-            if (this.kingPot && notif.args.kingPot) {
+            if (this.kingPot && notif.args.kingPot != undefined) {
                 this.kingPot.setValue(notif.args.kingPot)
-            }
-            if (this.pagatPot && notif.args.pagatPot) {
+                total += Number(notif.args.kingPot)
+            } 
+            if (this.pagatPot && notif.args.pagatPot != undefined) {
                 this.pagatPot.setValue(notif.args.pagatPot)
+                total += Number(notif.args.pagatPot)
             }
+            if (total != 0) console.error('Unbalanced scores! Please report this hand: ', total)
         },
 
         notifyLog: function(notif) {
