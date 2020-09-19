@@ -70,7 +70,7 @@ $stats_type = array(
         ],
         "failed_ultimo" => [
             "id"=> 12,
-            "name" => totranslate("Hands with Failed Ultimo"),
+            "name" => totranslate("Failed Ultimos"),
             "type" => "int"
         ],
         "nill" => [

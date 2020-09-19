@@ -297,21 +297,10 @@ function (dojo, declare, easing) {
                 if (log && args && !args.processed) {
                     args.processed = true;
 
-                    // if (args.seeResults !== undefined) {
-                    //     const theArgs = JSON.parse(JSON.stringify(args))
-                    //     setTimeout(() => {
-                    //         dojo.connect($('result_of_hand_' + theArgs.hand), 'onclick', this, (e) => {
-                    //             console.log(theArgs)
-                    //             e.preventDefault()
-                    //             dojo.publish('tableWindow', theArgs)
-                    //         })
-                    //     }, 0)
-                    //     args.seeResults = dojo.string
-                    //         .substitute('<a id="${linkId}">${seeResult}</a>', {
-                    //             linkId: 'result_of_hand_' + args.hand,
-                    //             seeResult: _('click for results')
-                    //         })
-                    // }
+                    if (args.seeResult !== undefined) {
+                        args.copyOfResult = args.seeResult; // HACK: Notification handler needs this
+                        args.seeResult = this.linkToResult(args.n, args.seeResult);
+                    }
 
                     // List of declarations => single localized string
                     if (args.declarations !== undefined) {
@@ -360,6 +349,20 @@ function (dojo, declare, easing) {
             return this.inherited(arguments);
         },
 
+        linkToResult: function(n, args) {
+            // HACK: This needs to be done after the element was added to the log, BUT
+            // it needs to be done even if the log was shown after a reload (i.e. it
+            // isn't sufficient to do it in the notification handler).
+            setTimeout(() => dojo.connect(
+                $('result_of_hand_' + n), 'onclick', this, (e) => {
+                    e.preventDefault();
+                    this.showResultDialog(args);
+                }), 0)
+            return dojo.string.substitute('<a id="${linkId}">${seeResult}</a>', {
+                linkId: 'result_of_hand_' + n,
+                seeResult: _('click for results')
+            })
+        },
 
         toLocalizedDeclarationList: function (declarations) {
             let message = "Pass"
@@ -756,7 +759,7 @@ function (dojo, declare, easing) {
             this.notifqueue.setSynchronous('trickWin', 1000)
             dojo.subscribe('giveAllCardsToPlayer', this, 'notifyGiveAllCardsToPlayer')
             dojo.subscribe('newScores', this, 'notifyNewScores')
-
+            dojo.subscribe('scoreTable', this, 'notifyScoreTable')
 
             dojo.subscribe('log', this, 'notifyLog')
         },
@@ -927,7 +930,27 @@ function (dojo, declare, easing) {
                 this.pagatPot.setValue(notif.args.pagatPot)
                 total += Number(notif.args.pagatPot)
             }
-            if (total != 0) console.error('Unbalanced scores! Please report this hand: ', total)
+            if (this.numberOfPlayers > 2 && total != 0) {
+                console.error('Unbalanced scores! Please report this hand: ', total)
+            }
+        },
+
+        notifyScoreTable: function(notif) {
+            this.showResultDialog(notif.args.copyOfResult)
+        },
+
+        showResultDialog: function (args) {
+            this.scoringDialog = this.displayTableWindow(
+				args.id,
+				args.title,
+				args.table,
+				args.footer,
+                this.format_string_recursive(
+					'<div id="tableWindow_actions"><a id="close_btn" class="bgabutton bgabutton_blue">${close}</a></div>',
+					{ close: _(args.closing) }
+				)
+			)
+			this.scoringDialog.show()
         },
 
         notifyLog: function(notif) {

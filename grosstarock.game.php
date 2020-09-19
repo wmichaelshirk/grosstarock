@@ -2018,14 +2018,11 @@ class GrossTarock extends Table {
         $card_points = $calculated_score['card_points'];
         $nullAchieved = $calculated_score["null_won"];
 
-        $this->notifyAllPlayers('log', '', [
-            'scoring_features' => $scoring_features,
-            'point_totals' => $point_totals,
-            'card_points' => $card_points
-        ]);
-
         $footer = $nullAchieved ? clienttranslate("Successful Ultimos and Card Points are not scored in a Misère") : "";
-        $this->notifyAllPlayers( "tableWindow", '', [
+        // 'tableWindow' is automatic; I'm changing it to catch the results and 
+        //  be able to re-show them.
+        $handsPlayed = self::getGameStateValue( 'hands_played');
+        $seeResult = [
             "id" => 'finalScoring',
             "title" => clienttranslate("Scoring Summary"),
             "table" => $calculated_score["table"],
@@ -2035,7 +2032,11 @@ class GrossTarock extends Table {
             // ],
             "footer" => $footer,
             "closing" => clienttranslate( "Close" )
-        ]);
+            ];
+        self::notifyAllPlayers( 'scoreTable', clienttranslate('Hand #${n} is completed - ${seeResult}'), array(
+            'n' => $handsPlayed,
+            'seeResult' => $seeResult
+        ));
     }
 
     /*
