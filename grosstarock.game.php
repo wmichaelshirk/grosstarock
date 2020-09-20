@@ -297,7 +297,7 @@ class GrossTarock extends Table {
     private function doDeal () {
         $dealer_id = self::getGameStateValue( 'dealer_id' );
 
-        // // deal a ridonculous hand for testing:
+        // deal a ridonculous hand for testing:
         // $trumps = $this->cards->getCardsOfType( 5 );
         // $pagat = array_shift($trumps);
         // $trumps = array_slice($trumps, 2);
@@ -1127,6 +1127,9 @@ class GrossTarock extends Table {
         if ($currentSuitLed == 0 && $currentCard['type_arg'] != 22) {
             self::setGameStateValue('suit_led', $currentCard['type']);
         }
+        if ($currentCard['type_arg'] == 22) {
+            self::setGameStateValue('scuse_played', 1);;
+        }
 
         $dealer = self::getGameStateValue('dealer_id');
         $trumpsDiscarded = self::getGameStateValue('trumps_discarded');
@@ -1151,7 +1154,8 @@ class GrossTarock extends Table {
                 'player_name' => self::getActivePlayerName(),
                 'player_id' => $playerId,
                 'card' => $currentCard,
-                'card_name' => ''
+                'card_name' => '',
+                'cardNo' => $cardsPlayed
             ]
         );
 
@@ -1650,7 +1654,6 @@ class GrossTarock extends Table {
 
             // Process the fool
             if ($fool_played) { // The Fool (which can't win the trick) has been played
-                self::setGameStateValue('scuse_played', 1);
                 $fool = $this->cards->getCardsOfType(5, 22);
                 $fool = reset($fool);
                 if ($fool_lost) {

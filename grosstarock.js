@@ -152,7 +152,7 @@ function (dojo, declare, easing) {
                 const suit = card.type;
                 const value = card.type_arg;
                 const player_id = card.location_arg;
-                this.playCardOnTable(player_id, suit, value, card.id);
+                this.playCardOnTable(player_id, suit, value, card.id, i+1);
             }
 
             // 	Buttons of scusePanel
@@ -445,10 +445,9 @@ function (dojo, declare, easing) {
             }
         },
 
-        playCardOnTable : function(playerId, suit, value, card_id) {
+        playCardOnTable : function(playerId, suit, value, card_id, no) {
 
-            const currentCards = dojo.query('.cardontable').length
-            dojo.style(this.getPlayerTableEl(playerId), 'z-index', currentCards + 1)
+            dojo.style(this.getPlayerTableEl(playerId), 'z-index', no + 5)
 
             // (nx, ny) : indices in sprite
             var nx = value - 1;
@@ -540,14 +539,12 @@ function (dojo, declare, easing) {
         showBubble: function(player, message) {
             const itemId = this.getPlayerTableEl(player, 'bubble')
             $(itemId).innerHTML = message;
-            dojo.style(itemId, { display: 'block', opacity: 1 });
+            dojo.addClass(itemId, 'playerTables__bubble--visible')
         },
 
         hideBubble: function(player) {
             const itemId = this.getPlayerTableEl(player, 'bubble')
-            if ($(itemId).style.opacity > 0) {
-                dojo.fadeOut({ node: itemId, duration: 300 }).play()
-            }
+            dojo.removeClass(itemId, 'playerTables__bubble--visible')
         },
 
         hideAllBubbles: function() {
@@ -824,7 +821,8 @@ function (dojo, declare, easing) {
             const suit = notif.args.card.type
             const value = notif.args.card.type_arg
             const id = notif.args.card.id
-            this.playCardOnTable(notif.args.player_id, suit, value, id);
+            const cardNo = Number(notif.args.cardNo)
+            this.playCardOnTable(notif.args.player_id, suit, value, id, cardNo);
         },
 
         notifyNameSuit: function (notif) {

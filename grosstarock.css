@@ -323,7 +323,7 @@
 	opacity: 0;
 	background: white;
 	border-radius: 18px/15px;
-	bottom: 100%;
+	top: 100%;
 	color: #000;
 	font-weight: normal;
 	left: -30px;
@@ -343,8 +343,8 @@
 .playerTables__bubble:after {
 	border-color: #ffffff transparent;
 	border-style: solid;
-	border-width: 15px 15px 0;
-	bottom: -10px;
+	border-width: 0 15px 15px;
+	top: -10px;
 	content: '';
 	display: block;
 	left: 30px;
@@ -352,13 +352,25 @@
 	width: 0;
 }
 .playerTables__bubble:hover {
-	opacity: 0.5;
+	opacity: 0.3;
 }
 .playerTables__bubble--visible {
 	opacity: 1;
 	display: block;
 	pointer-events: all;
 }
+
+/* make it not go up except player 0 */
+.playertable_0 .playerTables__bubble {
+	bottom: 100%;
+	top: unset;
+}
+.playertable_0 .playerTables__bubble:after {
+	border-width: 15px 15px 0;
+	bottom: -10px;
+	top: unset;
+}
+
 
 #right {
     position: absolute;
