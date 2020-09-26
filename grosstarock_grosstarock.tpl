@@ -95,7 +95,15 @@
 <div id="myhand_wrap" class="whiteblock">
     <div id="myhand"></div>
 </div>
-
+<div id="card_style_row">
+    <div id='card_style' class='whiteblock'>
+        <div><strong id='current_style'></strong></div>
+            <a id='change_card_style' class='bgabutton bgabutton_gray'>
+                <span>{CHANGE_STYLE}</span>
+            </a>
+        </div>
+    </div>
+</div>
 <script type="text/javascript">
 
 // Javascript HTML templates
