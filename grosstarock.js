@@ -522,7 +522,9 @@ function (dojo, declare, easing) {
                         dojo.string.substitute( _('Hand ${n}'), {
                             n: current
                         }) + '</strong><div>' +
-                        _('Game is to 100 points') + '<div>';
+                        dojo.string.substitute( _('Game is to ${t} points'), {
+                            t: Math.ceil(total * 6.66)
+                        }) + '<div>';
             } else {
                 $('hand_count_wrap').innerHTML = '<strong>' +
                         dojo.string.substitute( _('Hand ${n} of ${t}'), {
