@@ -437,7 +437,7 @@ class GrossTarock extends Table {
         }
     }
 
-    private function emptyPots () {
+    function emptyPots () {
         if (self::getGameStateValue('score_pots')) {
             $players = self::loadPlayersBasicInfos();
 
@@ -447,25 +447,34 @@ class GrossTarock extends Table {
                     'kingVal' => self::getGameStateValue('king_pot')
                 ]);
 
-            $pagatVal = floor(self::getGameStateValue('pagat_pot') / 15);
-            $kingVal = floor(self::getGameStateValue('king_pot') / 15);
-            self::incGameStateValue('pagat_pot', -($pagatVal * 15));
-            self::incGameStateValue('king_pot', -($kingVal * 15));
-            $pagatVal *= 5;
-            $kingVal *= 5;
+            $potTotal = self::getGameStateValue('pagat_pot') + 
+                self::getGameStateValue('king_pot');
+            $evenTotal = floor($potTotal / 15) * 5;
+            $remainder = $potTotal % 15;
 
-            $total = $pagatVal + $kingVal;
-            self::notifyAllPlayers('endGamePotPayments',
-                clienttranslate('Everyone receives <b>${pagatVal}</b> from the Pagat Pot, and <b>${kingVal}</b> from the King Pot: ${total}'), [
-                    'pagatVal' => $pagatVal,
-                    'kingVal' => $kingVal,
-                    'total' => $total
-                ]);
+            self::setGameStateValue('pagat_pot', 0);
+            self::setGameStateValue('king_pot', 0);
+
+            $scores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true);
+            $minScore = min($scores);
+            $minPlayer = 0;
 
             foreach ($players as $player_id => $player) {
+                $total = $evenTotal;
+                if ($scores[$player_id] == $minScore) {
+                    $total += $remainder;
+                    $minPlayer = $player_id;
+                }
                 $sql = "UPDATE player SET player_score = player_score + $total WHERE player_id='$player_id'";
                 self::DbQuery($sql);
             }
+
+            self::notifyAllPlayers('endGamePotPayments',
+                clienttranslate('Everyone receives <b>${evenTotal}</b> from the pots; ${name} gets the remaining ${remainder}'), [
+                    'evenTotal' => $evenTotal,
+                    'name' => self::getPlayerName($minPlayer),
+                    'remainder' => $remainder
+                ]);
 
             $newScores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true);
             self::notifyAllPlayers("newScores", '', [

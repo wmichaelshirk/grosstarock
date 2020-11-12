@@ -737,7 +737,7 @@ function (dojo, declare, easing) {
             rank++
             let  tooltipText = ''
             if (suit == 5 && rank == 22) {
-                tooltipText = this.format_string_recursive(_('‘${trullname}’ (${card_name}), worth 5 points'), {
+                tooltipText = this.format_string_recursive(_('‘${trullname}’ (${card_name}), worth 4 points'), {
                     trullname: this.trull[rank].name,
                     card: { type: suit, type_arg: rank }
                 })
@@ -755,7 +755,7 @@ function (dojo, declare, easing) {
                         rankName = 11 - rank
                     }
                 }
-                value = suit < 5 ? Math.max(rank - 10, 0) : ([1,21].includes(rank) && 5 )
+                value = suit < 5 ? Math.max(rank - 10, 0) : ([1,21].includes(rank) && 4 )
                 tooltipText = this.format_string_recursive(_('${name} ${suitOf} (${card_name})'), {
                     name: rankName,
                     suitOf: _(this.suits[suit].nameof),

@@ -94,15 +94,15 @@ $game_options = [
         ],
     ],
     103 => [
-        'name' => totranslate('Winner is payed when an Ultimo fails'),
+        'name' => totranslate('Winner is paid when an Ultimo fails'),
         'values' => [
             0 => [
                 'name' => totranslate('No'),
-                'description' => totranslate('If an Ultimo fails, the winner of the last trick is payed only for stopping the Ultimo.')
+                'description' => totranslate('If an Ultimo fails, the winner of the last trick is paid only for stopping the Ultimo.')
             ],
             1 => [
                 'name' => totranslate('Yes'),
-                'description' => totranslate('If an Ultimo fails, the failing player not only pays the other two, but the winner of the last trick is seperately payed by the other two, increasing his gains and the failed Ultimo player’s losses.')
+                'description' => totranslate('If an Ultimo fails, the failing player not only pays the other two, but the winner of the last trick is seperately paid by the other two, increasing his gains and the failed Ultimo player’s losses.')
             ]
         ],
         'displaycondition' => [

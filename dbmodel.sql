@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `card` (
   PRIMARY KEY (`card_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- Standard schema to manage cards
+-- Table to manages bonuses as they're completed
 CREATE TABLE IF NOT EXISTS `bonuses` (
   `bonus_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `bonus_name` varchar(64) NOT NULL COMMENT '${arg} Matadors, etc',
