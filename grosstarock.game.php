@@ -1829,25 +1829,21 @@ class GrossTarock extends Table {
                 'trick_won' => $tricksWon
             ]);
 
-            self::notifyAllPlayers('giveAllCardsToPlayer', '', [
-                'player_id' => $best_value_player_id
-            ]);
 
             // The animation must show the fool remains the property of the
             // player who played it
-            if ($fool_played) {
+            if ($fool_played && $UI_keep_fool) {
                 self::notifyAllPlayers('giveAllCardsToPlayer',
-                    clienttranslate('${player_name} keeps the ’Scuse'), array(
+                    clienttranslate('${player_name} keeps the ’Scuse'), [
                     'player_id' => $best_value_player_id,
                     'fool_owner_id' => $fool_owner_id,
-                    'fool_to_id' => $UI_keep_fool ? $fool_owner_id : $best_value_player_id,
+                    'fool_to_id' =>  $fool_owner_id,
                     'player_name' => self::getPlayerName($fool_owner_id)
-                ));
-            }
-            else {
-                self::notifyAllPlayers('giveAllCardsToPlayer', '', array(
+                ]);
+            } else {
+                self::notifyAllPlayers('giveAllCardsToPlayer', '', [
                     'player_id' => $best_value_player_id,
-                ));
+                ]);
             }
 
 
