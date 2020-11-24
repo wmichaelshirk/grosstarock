@@ -33,21 +33,11 @@ $game_options = [
     100 => [
         'name' => totranslate( 'Game length' ),
         'values' => [
-            3 => [
-                'name' => totranslate( 'Very short - 3 hands (3 player) - 20pts (2 player)' ),
-            ],
-            6 => [
-                'name' => totranslate( 'Short - 6 hands (3 player) - 40pts (2 player)' ),
-            ],
-            9 => [
-                'name' => totranslate( 'Medium - 9 hands (3 player) - 60pts (2 player)' ),
-            ],
-            12 => [
-                'name' => totranslate( 'Long - 12 hands (3 player) - 80pts (2 player)' ),
-            ],
-            15 => [
-                'name' => totranslate( 'Very long - 15 hands (3 player) - 100pts (2 player)' ),
-            ]
+            1 => ['name' => totranslate('Very short - 1 round')],
+            2 => ['name' => totranslate('Short - 2 rounds')],
+            3 => ['name' => totranslate('Medium - 3 rounds')],
+            4 => ['name' => totranslate('Long - 4 rounds')],
+            5 => ['name' => totranslate('Very long - 5 rounds')]
         ],
     ],
     101 => [

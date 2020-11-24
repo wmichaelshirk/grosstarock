@@ -89,6 +89,7 @@
     </div>
     <div id="right">
         <div id='hand_count_wrap' class='whiteblock tarok_sidebox'></div>
+        <div id='trick_count_wrap' class='whiteblock tarok_sidebox'></div>
     </div>
 </div>
   

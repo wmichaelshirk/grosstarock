@@ -55,7 +55,6 @@ function (dojo, declare, easing) {
 
         setup: function (gamedatas) {
             this.canPlayCard = false;
-
             this.numberOfPlayers = Object.keys(this.gamedatas.players)
                 .length
             this.dealer = gamedatas.dealer
@@ -167,6 +166,17 @@ function (dojo, declare, easing) {
             // 	Buttons of scusePanel
 			this.connectClass('scusePanel__btn', 'onclick', 'onScusePanelBtnClick')
 
+
+            // disable inactive player, if any
+            if (gamedatas.inactive_player_id != '0') {
+                const itemId = this.getPlayerTableEl(gamedatas.inactive_player_id)
+                dojo.addClass(itemId, 'disabled')
+                this.disablePlayerPanel(gamedatas.inactive_player_id)
+                if (this.player_id == gamedatas.inactive_player_id) {
+                    $('myhand').innerHTML = _('As the player opposite the dealer, you sit out this hand.')
+                }
+            }
+
             // move pots to dealer
             if (this.scoreWithPots) {
                 const pots = dojo.byId('ultimo_pot_wrap')
@@ -185,6 +195,10 @@ function (dojo, declare, easing) {
 
             // Hand counter
             this.updateHandCounter(gamedatas.current_hand, gamedatas.hands_to_play);
+            $('trick_count_wrap').innerHTML =
+                dojo.string.substitute( _('Trick ${n} of 25'), {
+                    n: gamedatas.current_trick,
+                })
 
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
@@ -412,7 +426,7 @@ function (dojo, declare, easing) {
         },
 
         setPreselectMode: function() {
-            this.playerHand.setSelectionMode(this.prefs[100].value == 1 ? 2 : 0)
+            this.playerHand.setSelectionMode(1)
         },
 
         getCardsInHand: function() {
@@ -517,22 +531,12 @@ function (dojo, declare, easing) {
         },
 
         updateHandCounter: function(current, total) {
-            if (this.numberOfPlayers == 2) {
-                $('hand_count_wrap').innerHTML = '<strong>' +
-                        dojo.string.substitute( _('Hand ${n}'), {
-                            n: current
-                        }) + '</strong><div>' +
-                        dojo.string.substitute( _('Game is to ${t} points'), {
-                            t: Math.ceil(total * 6.66)
-                        }) + '<div>';
-            } else {
-                $('hand_count_wrap').innerHTML = '<strong>' +
-                        dojo.string.substitute( _('Hand ${n} of ${t}'), {
-                            n: Math.min(current, total),
-                            t: total
-                        }) +
-                        '</strong>'
-            }
+            $('hand_count_wrap').innerHTML = '<strong>' +
+                    dojo.string.substitute( _('Hand ${n} of ${t}'), {
+                        n: Math.min(current, total),
+                        t: total
+                    }) +
+                    '</strong>'
         },
 
         updatePossibleCards: function(cards) {
@@ -830,6 +834,21 @@ function (dojo, declare, easing) {
                 dojo.addClass(itemId, 'dealer')
                 this.addTooltipToClass('dealer', _('Current dealer'), '')
             }
+
+            // activate all players, inactive inactive player
+            let inactivePlayer = notif.args.inactive_id
+            if (inactivePlayer) {
+                dojo.query('.playertable').removeClass('disabled')
+                this.enableAllPlayerPanels()
+                const itemId = this.getPlayerTableEl(inactivePlayer)
+                dojo.addClass(itemId, 'disabled')
+                this.disablePlayerPanel(inactivePlayer)
+                $('myhand').innerHTML = ''
+                if (this.player_id == inactivePlayer) {
+                    $('myhand').innerHTML = _('As the player opposite the dealer, you sit out this hand.')
+                }
+            }
+
         },
 
         notifyNewHand: function (notif) {
@@ -850,6 +869,10 @@ function (dojo, declare, easing) {
                 const target = this.getPlayerTableEl(this.dealer, 'status')
                 this.slideToObject(pots, target, 1000).play()
             }
+            $('trick_count_wrap').innerHTML =
+                dojo.string.substitute( _('Trick ${n} of 25'), {
+                    n: '1',
+                })
         },
 
         notifyDealerDiscard: function (notif) {
@@ -926,6 +949,11 @@ function (dojo, declare, easing) {
             this.updatePlayerTrickCount(notif.args.player_id,
                 notif.args.trick_won)
 
+            $('trick_count_wrap').innerHTML =
+                dojo.string.substitute( _('Trick ${n} of 25'), {
+                    n: Math.min(Number(notif.args.next) + 1, 25)
+                })
+
             // BELOTE COINCHE: clear the old tricks from logs.
             // var me = this
 			// setTimeout(function() {
@@ -954,11 +982,12 @@ function (dojo, declare, easing) {
                     playerToId = winner_id;
                 }
                 const target = this.getPlayerTableEl(playerToId, 'avatar')
-
-                let anim = this.slideToObject(cardEl, target, 500);
-                dojo.connect(anim, 'onEnd',
-                    () => this.fadeOutAndDestroy(cardEl, 500))
-                anim.play();
+                if (cardEl) {
+                    let anim = this.slideToObject(cardEl, target, 500);
+                    dojo.connect(anim, 'onEnd',
+                        () => this.fadeOutAndDestroy(cardEl, 500))
+                    anim.play();
+                }
             }
         },
 
@@ -984,6 +1013,7 @@ function (dojo, declare, easing) {
 
         notifyScoreTable: function(notif) {
             this.showResultDialog(notif.args.copyOfResult)
+            $('trick_count_wrap').innerHTML = ''
         },
 
         showResultDialog: function (args) {

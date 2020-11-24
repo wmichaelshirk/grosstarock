@@ -24,9 +24,13 @@ class view_grosstarock_grosstarock extends game_view {
         // Get players & players number
         $players = $this->game->loadPlayersBasicInfos();
         $players_nbr = count( $players );
-        $players_nbr_class = $players_nbr == 3 ? "three_players" : "two_players";
 
-
+        $players_nbr_class = "two_players";
+        if ($players_nbr == 3) {
+            $players_nbr_class = "three_players";
+        } else if ($players_nbr == 4) {
+            $players_nbr_class = "four_players";
+        }
 
         $template = self::getGameName() . "_" . self::getGameName();
 

@@ -1,10 +1,10 @@
 /**
  *------
- * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel 
+ * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel
  * Colin <ecolin@boardgamearena.com>
  * GrossTarock implementation : © W Michael Shirk <wmichaelshirk@gmail.com>
  *
- * This code has been produced on the BGA studio platform for use on 
+ * This code has been produced on the BGA studio platform for use on
  * http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
  * -----
@@ -121,8 +121,10 @@
     height: 450px;
 }
 /* Position of players according to their number */
-.three_players .playertable_0, /* South */
-.two_players .playertable_0 { /* South */
+/* South */
+.four_players  .playertable_0,
+.three_players .playertable_0,
+.two_players   .playertable_0 {
     left: 50%;
     bottom: 0;
     transform: translateX(-50%); /* center */
@@ -156,46 +158,50 @@
 	text-align: left;
 }
 
-
-.two_players .playertable_1 { /* North */
+/* North */
+.four_players .playertable_2,
+.two_players  .playertable_1 {
     left: 50%;
     top: 0px;
     transform: translateX(-50%); /* center */
 }
-.two_players .playertable_1 .playerTables__avatar-wrapper {
+.four_players .playertable_2 .playerTables__avatar-wrapper,
+.two_players  .playertable_1 .playerTables__avatar-wrapper {
 	position: absolute;
 	top: 0px;
 	left: 50%;
     transform: translateX(-50%);
 }
+.four_players .playertable_2 .playerTables__card,
 .two_players .playertable_1 .playerTables__card {
 	top: 120px;
 	left: 50%;
     transform: translateX(-50%);
 }
+.four_players .playertable_2 .playerTables__pre-status,
+.two_players  .playertable_1 .playerTables__pre-status {
+	top: 25%;
+	right: -2em;
+	position: absolute;
+}
+.four_players .playertable_2 .playerTables__status,
 .two_players .playertable_1 .playerTables__status {
 	top: 25%;
 	left: -2em;
 	position: absolute;
 }
-.two_players .playertable_1 .playerTables__tricksWon {
+.four_players .playertable_2 .playerTables__tricksWon,
+.two_players  .playertable_1 .playerTables__tricksWon {
 	top: 0;
 	right: -2em;
     text-align: left;
 }
 
 
-
-
-
-.three_players .playertable_1 { /* North-East */
+/* North-East */
+.three_players .playertable_1 {
     right: 0px;
     top: 0px;
-}
-
-.three_players  .playertable_1 {
-	right: 0;
-	top: 0;
 }
 .three_players .playertable_1 .playerTables__avatar-wrapper {
 	position: absolute;
@@ -223,38 +229,65 @@
 }
 
 
+/* East */
+.four_players .playertable_1 {
+    right: 0px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+.four_players .playertable_1 .playerTables__avatar-wrapper {
+	position: absolute;
+	right: 0;
+	top: 50%;
+	transform: translateY(-50%);
+}
+.four_players .playertable_1 .playerTables__card {
+	right: 120px;
+	top: 50%;
+    transform: translateY(-50%);
+}
+.four_players .playertable_1 .playerTables__pre-status {
+	bottom: 0;
+	right: 20%;
+	position: absolute;
+}
+.four_players .playertable_1 .playerTables__status {
+	right: 25%;
+	top: 0;
+	position: absolute;
+}
+.four_players .playertable_1 .playerTables__tricksWon {
+	bottom: 0;
+	right: 0;
+	text-align: right;
+}
 
 
-
-
-.three_players .playertable_2 { /* North-West */
+ /* North-West */
+.three_players .playertable_2 {
     left: 0px;
     top: 0px;
 }
-.playertable_2 {
-	left: 0;
-	top: 0;
-}
-.playertable_2 .playerTables__avatar-wrapper {
+.three_players .playertable_2 .playerTables__avatar-wrapper {
 	position: absolute;
 	left: 0;
 	top: 0;
 }
-.playertable_2 .playerTables__card {
+.three_players .playertable_2 .playerTables__card {
 	left: 120px;
 	top: 50%;
 }
-.playertable_2 .playerTables__pre-status {
+.three_players .playertable_2 .playerTables__pre-status {
 	top: 10%;
 	right: 0;
 	position: absolute;
 }
-.playertable_2 .playerTables__status {
+.three_players .playertable_2 .playerTables__status {
 	top: 80%;
 	left: 25%;
 	position: absolute;
 }
-.playertable_2 .playerTables__tricksWon {
+.three_players .playertable_2 .playerTables__tricksWon {
 	top: 0%;
 	right: 0;
 	text-align: left;
@@ -262,11 +295,42 @@
 
 
 
+/* West */
+.four_players .playertable_3 {
+    left: 0px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+.four_players .playertable_3 .playerTables__avatar-wrapper {
+	position: absolute;
+	left: 0;
+	top: 50%;
+	transform: translateY(-50%);
+}
+.four_players .playertable_3 .playerTables__card {
+	left: 120px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+.four_players .playertable_3 .playerTables__pre-status {
+	top: 0;
+	left: 20%;
+	position: absolute;
+}
+.four_players .playertable_3 .playerTables__status {
+	left: 25%;
+	bottom: 0;
+	position: absolute;
+}
+.four_players .playertable_3 .playerTables__tricksWon {
+	top: 0;
+	left: 0;
+	text-align: left;
+}
+
 /*
  * Player Areas
  */
-
-
 
 .playertable {
 	z-index: 1;
@@ -653,3 +717,22 @@
     display: flex;
     justify-content: center;
 }
+
+.playertable.disabled {
+	filter: brightness(.7);
+}
+#myhand {
+	font-style: italic;
+	text-align: center;
+}
+
+/* styles for the rules/strategy below. */
+dl dt {
+	font-weight: bold;
+	margin-top: .5em;
+}
+dl dd { margin-left: 1em; }
+b { font-weight: bold; }
+li { margin-left: 2em; }
+ul li { list-style: disc; }
+ol li {	list-style: decimal; }
