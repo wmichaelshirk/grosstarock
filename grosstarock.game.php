@@ -126,6 +126,12 @@ class GrossTarock extends Table {
             count($players) > 2
         );
 
+        // Default ScorePoints to true - if pots aren't used.
+        if (self::getGameStateValue('play_with_pots') != 1) {
+            // scoring card points is "default" - but you can still disable
+            // it before turning off pots.
+            self::setGameStateInitialValue('score_card_points', 1);
+        }
 
         // Get the first dealer and the first player
         $dealer_id = self::getActivePlayerId();

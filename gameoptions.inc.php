@@ -82,6 +82,7 @@ $game_options = [
                 'value' => [1]
             ]
         ],
+        'default' => 1
     ],
     103 => [
         'name' => totranslate('Winner is paid when an Ultimo fails'),
